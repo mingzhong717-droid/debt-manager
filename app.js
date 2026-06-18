@@ -1674,7 +1674,8 @@ function schedulePaymentReminders() {
 }
 
 // ===== AI 消费识别（多轮对话版）=====
-const FRIDAY_API   = 'https://aigc.sankuai.com/v1/chat/completions';
+const FRIDAY_API    = 'https://aigc.sankuai.com/v1/chat/completions';         // 文字模型接口
+const FRIDAY_VL_API = 'https://aigc.sankuai.com/v1/openai/native/chat/completions'; // VL 多模态接口
 const FRIDAY_TOKEN = '22041715054660149263';
 const MODEL_TEXT   = 'deepseek-v4-flash';  // 主线对话（纯文字，保持上下文）
 const MODEL_VL     = 'LongCat-VL-Medium';  // 图片识别（单次调用，结果合并回主线）
@@ -1839,9 +1840,29 @@ async function callVLModel(text, image) {
         ? `请识别图中的消费信息，并结合用户说明"${text}"，用文字描述消费的日期、金额、商家/分类、支付方式。`
         : '请识别图中的消费信息，用文字描述消费的日期、金额、商家/分类、支付方式。' },
   ];
-  const data = await fridayRequest(MODEL_VL, [
-    { role: 'user', content: userContent }
-  ], 400);
+  // VL 模型使用专用接口和 max_new_tokens 参数
+  const resp = await fetch(FRIDAY_VL_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${FRIDAY_TOKEN}`,
+    },
+    body: JSON.stringify({
+      model: MODEL_VL,
+      messages: [{ role: 'user', content: userContent }],
+      max_new_tokens: 400,
+      temperature: 0.95,
+      repetition_penalty: 1.1,
+      top_p: 0.7,
+      top_k: 4,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${t}`);
+  }
+  const data = await resp.json();
+  if (data.status && data.status !== 200) throw new Error(data.message || `VL API 错误 ${data.status}`);
   return data.choices?.[0]?.message?.content || '';
 }
 
