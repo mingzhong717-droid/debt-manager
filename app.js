@@ -167,21 +167,28 @@ function calcSummary() {
 
   DATA.banks.forEach(bank => {
     bank.accounts.forEach(acc => {
-      totalDebt += acc.totalDebt || 0;
-
-      if (acc.type === 'credit') {
-        // 信用卡：最低还款 + 分期月供
-        monthlyDue += acc.minPayment || 0;
-        acc.installments?.forEach(inst => {
-          monthlyDue += inst.monthlyPayment || 0;
-        });
-        // 还款日
+      if (acc.type === 'loan') {
+        // 贷款：直接用 totalDebt（本金余额）
+        totalDebt += acc.totalDebt || 0;
+        monthlyDue += acc.monthlyPayment || 0;
         const dueDay = acc.dueDay;
         let dueDate = now.date(dueDay);
         if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
         if (!nextDue || dueDate.isBefore(nextDue)) nextDue = dueDate;
-      } else if (acc.type === 'loan') {
-        monthlyDue += acc.monthlyPayment || 0;
+
+      } else if (acc.type === 'credit') {
+        // 信用卡：真实负债 = 分期剩余余额之和 + 当期未分期账单余额
+        const instTotal = (acc.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
+        // 当期账单中，分期月供部分已包含在 installments 里，minPayment 是当期账单总额
+        // 为避免重复，非分期部分 = minPayment - 当期分期月供之和
+        const instMonthly = (acc.installments || []).reduce((s, i) => s + (i.monthlyPayment || 0), 0);
+        const nonInstBill = Math.max(0, (acc.minPayment || 0) - instMonthly);
+        totalDebt += instTotal + nonInstBill;
+
+        // 月供：当期账单（含分期月供）
+        monthlyDue += acc.minPayment || 0;
+
+        // 还款日
         const dueDay = acc.dueDay;
         let dueDate = now.date(dueDay);
         if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
@@ -1680,7 +1687,59 @@ const FRIDAY_TOKEN = '22041715054660149263';
 const MODEL_TEXT   = 'deepseek-v3-friday'; // 主线对话（纯文字，保持上下文）
 const MODEL_VL     = 'LongCat-VL-Medium';  // 图片识别（单次调用，结果合并回主线）
 
-const AI_SYSTEM_PROMPT = `你是一个个人负债与消费管理助手，能识别用户意图并返回结构化 JSON。
+// ===== 构建负债数据上下文（注入给 AI）=====
+function buildDebtContext() {
+  if (!DATA) return '';
+  const lines = [];
+  lines.push(`【我的负债数据快照 · ${DATA.meta.lastUpdated}】`);
+
+  // 汇总
+  const { totalDebt, monthlyDue } = calcSummary();
+  lines.push(`总负债：¥${totalDebt.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+  lines.push(`本月应还：¥${monthlyDue.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+
+  // 钱包
+  const wallets = DATA.meta.wallets || [];
+  const walletTotal = wallets.reduce((s, w) => s + (w.balance || 0), 0);
+  lines.push(`可用余额：¥${walletTotal.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}（${wallets.map(w => `${w.name}¥${w.balance}`).join('、')}）`);
+  lines.push('');
+
+  // 各账户明细
+  DATA.banks.forEach(bank => {
+    bank.accounts.forEach(acc => {
+      if (acc.type === 'savings') return;
+      lines.push(`▌ ${bank.name} · ${acc.name}`);
+      if (acc.type === 'loan') {
+        lines.push(`  类型：贷款 | 剩余本金：¥${acc.totalDebt} | 月供：¥${acc.monthlyPayment} | 年利率：${(acc.interestRate * 100).toFixed(2)}% | 剩余${acc.remainingMonths}期 | 还款日：每月${acc.dueDay}日 | 到期：${acc.endDate}`);
+        if (acc.note) lines.push(`  备注：${acc.note}`);
+      } else if (acc.type === 'credit') {
+        lines.push(`  类型：信用卡 | 当期账单：¥${acc.minPayment} | 还款日：每月${acc.dueDay}日 | 月利率：${(acc.interestRate * 100).toFixed(4)}%`);
+        if (acc.note) lines.push(`  备注：${acc.note}`);
+        if (acc.installments && acc.installments.length > 0) {
+          lines.push(`  分期明细：`);
+          acc.installments.forEach(inst => {
+            lines.push(`    - ${inst.name}：剩余¥${inst.remainingAmount}（共${inst.remainingMonths}期，月供¥${inst.monthlyPayment}，到期${inst.endDate}）${inst.note ? ' | ' + inst.note : ''}`);
+          });
+        }
+      }
+      lines.push('');
+    });
+  });
+
+  // 近期消费（最近10条）
+  const expenses = (DATA.expenses || []).slice(-10).reverse();
+  if (expenses.length > 0) {
+    lines.push(`▌ 最近消费记录（最新${expenses.length}条）`);
+    expenses.forEach(e => {
+      lines.push(`  ${e.date} ¥${e.amount} ${e.category} [${e.payment}]${e.note ? ' ' + e.note : ''}`);
+    });
+  }
+
+  return lines.join('\n');
+}
+
+// ===== AI 系统提示词（静态部分）=====
+const AI_SYSTEM_PROMPT_STATIC = `你是一个个人负债与消费管理助手，能识别用户意图并返回结构化 JSON。
 
 今天日期：${dayjs().format('YYYY-MM-DD')}
 
@@ -1717,7 +1776,13 @@ intent=chat:
 规则：
 - 用户修正上一次结果时（说"不对""改成XX"），基于上次 JSON 修改后重新返回完整 JSON
 - 只返回 JSON，不要 markdown 代码块，不要任何解释文字
-- 无法确定的字段用合理默认值，不要留 null`;
+- 无法确定的字段用合理默认值，不要留 null
+- 当用户问"我的负债""应该先还哪个""下个月还多少"等分析类问题时，直接基于下方【我的负债数据快照】中的真实数据回答，不要说"我没有你的数据"`;
+
+// 动态生成完整系统提示词（每次对话时调用，确保数据最新）
+function buildSystemPrompt() {
+  return AI_SYSTEM_PROMPT_STATIC + '\n\n' + buildDebtContext();
+}
 
 // 主线对话历史（deepseek 保持上下文）
 let aiConversation = [];  // [{role, content}]
@@ -1980,10 +2045,10 @@ payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、
 
 // 调用主线模型（流式），onChunk(text) 每收到一段就回调
 async function callMainModel(conversation, onChunk) {
-  const messages = [
-    { role: 'system', content: AI_SYSTEM_PROMPT },
-    ...conversation,
-  ];
+const messages = [
+{ role: 'system', content: buildSystemPrompt() },  // 动态注入最新负债数据
+...conversation,
+];
   const resp = await fetch(FRIDAY_API, {
     method: 'POST',
     headers: {
