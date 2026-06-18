@@ -603,31 +603,71 @@ function renderTimeline() {
 
   DATA.banks.forEach(bank => {
     bank.accounts.forEach(acc => {
-      let endDate, totalAmount, paidAmount, monthlyPayment;
+      let endDate, totalAmount, paidAmount, monthlyPayment, note;
 
       if (acc.type === 'loan') {
         endDate = dayjs(acc.endDate);
-        totalAmount = acc.totalDebt + (acc.monthlyPayment * acc.remainingMonths - acc.totalDebt);
-        paidAmount = totalAmount - acc.totalDebt;
-        monthlyPayment = acc.monthlyPayment;
-      } else if (acc.type === 'credit') {
-        // 信用卡：按最低还款估算
-        const rate = acc.interestRate * 30;
-        const minPay = acc.minPayment;
-        let balance = acc.totalDebt;
-        let months = 0;
-        while (balance > 0 && months < 360) {
-          balance = balance * (1 + rate) - minPay;
-          months++;
+
+        // 判断是否为"到期还本"型（月供极低，仅付利息）
+        // 特征：monthlyPayment 远小于 totalDebt / remainingMonths
+        const isInterestOnly = acc.remainingMonths > 0 &&
+          acc.monthlyPayment < (acc.totalDebt / acc.remainingMonths) * 0.3;
+
+        if (isInterestOnly) {
+          // 到期还本：到期一次性还清本金，月供只是利息
+          monthlyPayment = acc.monthlyPayment; // 月利息
+          totalAmount = acc.totalDebt;         // 本金就是总债务
+          paidAmount = 0;                      // 本金尚未归还
+          note = '到期还本';
+        } else {
+          // 等额本息：正常计算已还进度
+          // 原始贷款总额 = 当前余额 + 已还本金
+          // 用 remainingMonths * monthlyPayment 估算剩余总还款
+          const remainingTotal = acc.monthlyPayment * acc.remainingMonths;
+          totalAmount = remainingTotal + acc.totalDebt; // 近似原始本金（含已还部分）
+          paidAmount = totalAmount - acc.totalDebt;
+          monthlyPayment = acc.monthlyPayment;
         }
-        endDate = today.add(months, 'month');
-        totalAmount = acc.totalDebt;
-        paidAmount = 0;
-        monthlyPayment = minPay;
+
+      } else if (acc.type === 'credit') {
+        // 信用卡：优先用分期结束日期，否则按最低还款估算
+        if (acc.installments && acc.installments.length > 0) {
+          // 取最晚的分期结束日
+          const latestEnd = acc.installments.reduce((latest, inst) => {
+            const d = dayjs(inst.endDate);
+            return d.isAfter(latest) ? d : latest;
+          }, dayjs(acc.installments[0].endDate));
+          endDate = latestEnd;
+
+          // 月供 = 所有分期月供之和
+          monthlyPayment = acc.installments.reduce((s, i) => s + (i.monthlyPayment || 0), 0);
+
+          // 进度 = 已还金额 / 原始总金额
+          const originalTotal = acc.installments.reduce((s, i) => s + (i.originalAmount || 0), 0);
+          const remainingTotal = acc.installments.reduce((s, i) => s + (i.remainingAmount || 0), 0);
+          totalAmount = originalTotal;
+          paidAmount = originalTotal - remainingTotal;
+        } else {
+          // 无分期：按最低还款估算结清时间
+          const rate = acc.interestRate * 30;
+          const minPay = acc.minPayment || acc.totalDebt;
+          let balance = acc.totalDebt;
+          let months = 0;
+          while (balance > 0.01 && months < 360) {
+            const interest = balance * rate;
+            balance = balance + interest - minPay;
+            months++;
+            if (minPay <= interest) { months = 1; break; } // 还不完
+          }
+          endDate = today.add(months, 'month');
+          totalAmount = acc.totalDebt;
+          paidAmount = 0;
+          monthlyPayment = minPay;
+        }
       }
 
       const monthsLeft = Math.max(0, endDate.diff(today, 'month'));
-      const pct = totalAmount > 0 ? Math.min(paidAmount / totalAmount, 1) : 0;
+      const pct = totalAmount > 0 ? Math.min(Math.max(paidAmount / totalAmount, 0), 1) : 0;
 
       items.push({
         endDate,
@@ -638,7 +678,8 @@ function renderTimeline() {
         accountName: acc.name,
         totalDebt: acc.totalDebt,
         monthlyPayment,
-        pct
+        pct,
+        note: note || ''
       });
     });
   });
@@ -657,7 +698,7 @@ function renderTimeline() {
         <div class="timeline-dot ${dotClass}"></div>
         <div class="timeline-card">
           <div class="timeline-date">${item.endDate.format('YYYY年M月')} 结清 · 还剩 ${item.monthsLeft} 个月</div>
-          <div class="timeline-title">${item.bankIcon} ${item.bankName} · ${item.accountName}</div>
+          <div class="timeline-title">${item.bankIcon} ${item.bankName} · ${item.accountName}${item.note ? ` <span class="tl-note">${item.note}</span>` : ''}</div>
           <div class="timeline-bar">
             <div class="timeline-bar-fill" style="width:${item.pct * 100}%"></div>
           </div>

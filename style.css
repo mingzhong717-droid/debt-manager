@@ -535,6 +535,7 @@ body {
   margin-bottom: 4px;
 }
 .timeline-title { font-weight: 600; margin-bottom: 8px; }
+.tl-note { font-size: 0.72rem; font-weight: 400; color: var(--warning); background: rgba(255,169,77,0.12); padding: 2px 7px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
 .timeline-bar {
   height: 6px;
   background: var(--bg3);
