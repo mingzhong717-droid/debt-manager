@@ -96,6 +96,10 @@
       </div>
     </div>
 
+    <!-- 本月消费概览 -->
+    <div class="section-title">本月消费概览</div>
+    <div class="expense-overview-wrap" id="expenseOverviewPanel"></div>
+
     <!-- 账单状态面板 -->
     <div class="section-title">信用卡账单状态</div>
     <div class="billing-status-wrap" id="billingStatusPanel"></div>
@@ -175,10 +179,19 @@
       <div class="ai-card-header">
         <span class="ai-icon">🤖</span>
         <span class="ai-title">AI 智能识别</span>
-        <span class="ai-subtitle">发文字或图片，自动填写消费表单</span>
+        <span class="ai-subtitle">支持多轮对话，可修正识别结果</span>
+        <button class="ai-clear-btn" id="aiClearBtn" title="清空对话">↺ 新对话</button>
       </div>
+      <!-- 对话历史气泡区 -->
+      <div class="ai-chat-history" id="aiChatHistory"></div>
+      <!-- 图片预览 -->
+      <div class="ai-preview-row" id="aiImagePreviewRow" style="display:none">
+        <img id="aiImagePreview" src="" alt="预览" />
+        <button class="ai-remove-img" id="aiRemoveImg">✕</button>
+      </div>
+      <!-- 输入区 -->
       <div class="ai-input-row">
-        <textarea id="aiTextInput" class="ai-textarea" placeholder="例如：昨天在麦当劳吃饭花了38元，用招商信用卡付的" rows="2"></textarea>
+        <textarea id="aiTextInput" class="ai-textarea" placeholder="描述消费，或上传图片，可继续追问修正…" rows="2"></textarea>
         <label class="ai-img-btn" for="aiImageInput" title="上传图片">
           📷
           <input type="file" id="aiImageInput" accept="image/*" style="display:none" />
@@ -186,10 +199,6 @@
         <button class="ai-send-btn" id="aiSendBtn" title="发送">
           <span id="aiSendIcon">➤</span>
         </button>
-      </div>
-      <div class="ai-preview-row" id="aiImagePreviewRow" style="display:none">
-        <img id="aiImagePreview" src="" alt="预览" />
-        <button class="ai-remove-img" id="aiRemoveImg">✕</button>
       </div>
       <div class="ai-status" id="aiStatus"></div>
     </div>
@@ -266,6 +275,60 @@
   </section>
 
 </main>
+
+<!-- ===== 消费记录编辑弹窗 ===== -->
+<div class="modal-overlay" id="editExpenseOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>✏️ 编辑消费记录</span>
+      <button class="modal-close" id="editExpenseClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="editExpDate" />
+        </div>
+        <div class="form-group">
+          <label>金额 (元)</label>
+          <input type="number" id="editExpAmount" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>分类</label>
+          <select id="editExpCategory">
+            <option value="餐饮">🍜 餐饮</option>
+            <option value="交通">🚇 交通</option>
+            <option value="购物">🛍️ 购物</option>
+            <option value="娱乐">🎮 娱乐</option>
+            <option value="医疗">🏥 医疗</option>
+            <option value="教育">📚 教育</option>
+            <option value="居家">🏠 居家</option>
+            <option value="其他">📦 其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>支付方式</label>
+          <select id="editExpPayment">
+            <option value="招商信用卡">招商信用卡</option>
+            <option value="广州银行信用卡">广州银行信用卡</option>
+            <option value="浦发信用卡">浦发信用卡</option>
+            <option value="农行信用卡">农行信用卡</option>
+            <option value="民生信用卡">民生信用卡</option>
+            <option value="微信/支付宝">微信/支付宝</option>
+            <option value="现金">现金</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <input type="text" id="editExpNote" placeholder="可选备注..." />
+      </div>
+      <button class="btn-primary" id="editExpSave" style="width:100%;margin-top:8px">💾 保存修改</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== 快速更新余额弹窗 ===== -->
 <div class="modal-overlay" id="quickUpdateOverlay">

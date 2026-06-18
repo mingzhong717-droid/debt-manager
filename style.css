@@ -878,6 +878,91 @@ input:focus, select:focus, textarea:focus {
   background: var(--bg3);
 }
 
+/* ===== 本月消费概览 ===== */
+.expense-overview-wrap {
+  margin-bottom: 24px;
+}
+.exp-overview-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.exp-overview-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.exp-ov-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.exp-ov-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.exp-ov-refund {
+  font-size: 0.8rem;
+  color: var(--success, #00d4aa);
+  background: rgba(0, 212, 170, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.exp-overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.exp-ov-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  transition: var(--transition);
+}
+.exp-ov-card:hover { border-color: var(--accent); }
+.exp-ov-card-name {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.exp-ov-card-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.exp-ov-card-refund {
+  font-size: 0.72rem;
+  color: var(--success, #00d4aa);
+  font-weight: 400;
+}
+.exp-ov-card-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.exp-ov-bar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+.exp-ov-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.exp-ov-bar-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 /* ===== 账单状态面板 ===== */
 .billing-status-wrap {
   display: grid;
@@ -1094,6 +1179,7 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 .ai-icon { font-size: 20px; }
 .ai-title {
@@ -1105,6 +1191,83 @@ input:focus, select:focus, textarea:focus {
   font-size: 12px;
   color: var(--text-muted);
   margin-left: 4px;
+  flex: 1;
+}
+.ai-clear-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.ai-clear-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 对话气泡区 */
+.ai-chat-history {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-right: 2px;
+}
+.ai-chat-history:empty { display: none; }
+.ai-bubble {
+  max-width: 88%;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.ai-bubble-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.ai-bubble-ai {
+  align-self: flex-start;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+.ai-bubble-img {
+  max-width: 140px;
+  max-height: 100px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+/* AI 解析结果卡片 */
+.ai-parsed-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-parsed-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.ai-parsed-row span { color: var(--text-muted); white-space: nowrap; }
+.ai-parsed-row strong { color: var(--text); }
+.ai-bubble-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 5px;
 }
 .ai-input-row {
   display: flex;
@@ -1213,6 +1376,18 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   justify-content: center;
 }
+.edit-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  line-height: 1.4;
+}
+.edit-btn:hover { border-color: var(--accent); color: var(--accent); }
 .refund-btn {
   background: none;
   border: 1px solid var(--accent2);
