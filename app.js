@@ -965,9 +965,54 @@ function addExpense() {
   showToast(`✅ 已录入 ${payment} 消费 ¥${amount}${billTip ? '\n' + billTip : ''}`);
 }
 
-function deleteExpense(id) {
-  const expenses = getExpenses().filter(e => e.id !== id);
-  saveExpenses(expenses);
+async function deleteExpense(id) {
+  const all = getExpenses();
+  const target = all.find(e => e.id === id);
+  if (!target) return;
+  const label = `${target.date} ${target.category} ${fmt(target.amount)}`;
+  if (!confirm(`确定删除这条记录？\n${label}`)) return;
+  const expenses = all.filter(e => e.id !== id);
+  setSyncStatus('syncing');
+  try {
+    // 直接按 id 删除云端单条记录
+    await sbFetch(EXPENSE_TABLE + '?id=eq.' + id, {
+      method: 'DELETE',
+      prefer: 'return=minimal'
+    });
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+    setSyncStatus('ok');
+    showToast('已删除');
+  } catch (e) {
+    console.warn('云端删除失败，仅本地删除:', e.message);
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+    setSyncStatus('error');
+    showToast('本地已删除，云端同步失败');
+  }
+  renderExpenseTable();
+  renderExpenseStats();
+}
+
+// 退款：复制原记录，金额取负，备注加「[退款]」前缀
+async function refundExpense(id) {
+  const all = getExpenses();
+  const target = all.find(e => e.id === id);
+  if (!target) return;
+  const label = `${target.date} ${target.category} ${fmt(target.amount)}`;
+  if (!confirm(`为这条记录录入退款？\n${label}\n\n将自动添加一条 -${fmt(target.amount)} 的退款记录。`)) return;
+  const refund = {
+    ...target,
+    id: Date.now(),
+    amount: -Math.abs(target.amount),
+    note: `[退款] ${target.note || target.category}`,
+    date: dayjs().format('YYYY-MM-DD'),  // 退款日期用今天
+    isCashAdvance: false,
+  };
+  const expenses = [refund, ...all];
+  expenses.sort((a, b) => b.date.localeCompare(a.date));
+  setSyncStatus('syncing');
+  await saveExpenses(expenses);
+  setSyncStatus('ok');
+  showToast(`已录入退款 ${fmt(Math.abs(refund.amount))}`);
   renderExpenseTable();
   renderExpenseStats();
 }
@@ -993,17 +1038,22 @@ function renderExpenseTable() {
 
   tbody.innerHTML = expenses.map(e => {
     const isCash = e.isCashAdvance;
+    const isRefund = e.amount < 0;
     const billTip = e.billMonth ? `<span class="bill-tag">${e.billMonth}账单</span>` : '';
+    const rowClass = isCash ? 'cash-advance-row' : isRefund ? 'refund-row' : '';
     return `
-    <tr class="${isCash ? 'cash-advance-row' : ''}">
+    <tr class="${rowClass}">
       <td>${e.date}</td>
       <td>${e.category}</td>
-      <td style="color:${isCash ? 'var(--danger)' : 'var(--warning)'};font-weight:600">
-        ${fmt(e.amount)}${isCash ? ' ⚠️' : ''}
+      <td style="color:${isCash ? 'var(--danger)' : isRefund ? 'var(--success)' : 'var(--warning)'};font-weight:600">
+        ${fmt(e.amount)}${isCash ? ' ⚠️' : isRefund ? ' ↩' : ''}
       </td>
       <td>${e.payment}${billTip}</td>
       <td style="color:var(--text-muted)">${e.note || '-'}</td>
-      <td><button class="del-btn" onclick="deleteExpense(${e.id})">🗑️</button></td>
+      <td class="action-btns">
+        <button class="del-btn" onclick="deleteExpense(${e.id})" title="删除">🗑️</button>
+        <button class="refund-btn" onclick="refundExpense(${e.id})" title="退款">↩️</button>
+      </td>
     </tr>`;
   }).join('');
 }

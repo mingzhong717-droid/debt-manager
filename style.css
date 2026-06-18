@@ -1205,3 +1205,29 @@ input:focus, select:focus, textarea:focus {
 .ai-status.success { color: var(--success); }
 .ai-status.error { color: var(--danger); }
 .ai-status.loading { color: var(--accent); }
+
+/* ===== 消费记录操作按钮 ===== */
+.action-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+.refund-btn {
+  background: none;
+  border: 1px solid var(--accent2);
+  border-radius: 6px;
+  color: var(--accent2);
+  font-size: 14px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  line-height: 1.4;
+}
+.refund-btn:hover {
+  background: var(--accent2);
+  color: #000;
+}
+/* 退款行（负金额）样式 */
+tr.refund-row td { opacity: 0.75; }
+tr.refund-row td:nth-child(3) { color: var(--success) !important; }
