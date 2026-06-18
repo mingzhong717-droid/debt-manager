@@ -1356,5 +1356,206 @@ function schedulePaymentReminders() {
   });
 }
 
+// ===== AI 消费识别 =====
+const FRIDAY_API   = 'https://aigc.sankuai.com/v1/chat/completions';
+const FRIDAY_TOKEN = '22041715054660149263';
+const MODEL_TEXT   = 'deepseek-v4-flash';   // 纯文字
+const MODEL_VL     = 'LongCat-VL-Medium';   // 含图片
+
+// 系统提示词
+const AI_SYSTEM_PROMPT = `你是一个消费记录解析助手。用户会发给你消费信息（文字描述或账单截图），请从中提取以下字段并以 JSON 格式返回，不要输出任何其他内容：
+{
+  "date": "YYYY-MM-DD",       // 消费日期，无法确定则用今天
+  "amount": 数字,              // 消费金额（元），必须是数字
+  "category": "分类",          // 从以下选一个：餐饮、交通、购物、娱乐、医疗、教育、居家、其他
+  "payment": "支付方式",        // 从以下选一个：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、微信/支付宝、现金
+  "note": "备注"               // 简短备注，无则空字符串
+}
+只返回 JSON，不要 markdown 代码块，不要解释。`;
+
+let aiImageBase64 = null;  // 当前待发送的图片 base64
+let aiImageMime   = null;  // 图片 MIME 类型
+
+// 图片选择处理
+document.getElementById('aiImageInput').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    // 提取 base64 和 mime
+    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!match) return;
+    aiImageMime   = match[1];
+    aiImageBase64 = match[2];
+    // 显示预览
+    document.getElementById('aiImagePreview').src = dataUrl;
+    document.getElementById('aiImagePreviewRow').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+  this.value = ''; // 允许重复选同一张图
+});
+
+// 移除图片
+document.getElementById('aiRemoveImg').addEventListener('click', () => {
+  aiImageBase64 = null;
+  aiImageMime   = null;
+  document.getElementById('aiImagePreviewRow').style.display = 'none';
+  document.getElementById('aiImagePreview').src = '';
+});
+
+// 发送按钮
+document.getElementById('aiSendBtn').addEventListener('click', handleAISend);
+document.getElementById('aiTextInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAISend(); }
+});
+
+async function handleAISend() {
+  const text  = document.getElementById('aiTextInput').value.trim();
+  const hasImg = !!aiImageBase64;
+
+  if (!text && !hasImg) {
+    setAIStatus('请输入消费描述或上传图片', 'error');
+    return;
+  }
+
+  // 禁用按钮，显示加载
+  const btn = document.getElementById('aiSendBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  document.getElementById('aiSendIcon').textContent = '⏳';
+  setAIStatus('AI 识别中...', 'loading');
+
+  try {
+    const result = await callFridayAI(text, hasImg ? { base64: aiImageBase64, mime: aiImageMime } : null);
+    fillExpenseForm(result);
+    // 清空输入
+    document.getElementById('aiTextInput').value = '';
+    document.getElementById('aiRemoveImg').click();
+    setAIStatus(`✅ 识别成功！已自动填写表单，请确认后点击"添加记录"`, 'success');
+  } catch (err) {
+    console.error('[AI]', err);
+    setAIStatus(`❌ 识别失败：${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    document.getElementById('aiSendIcon').textContent = '➤';
+  }
+}
+
+async function callFridayAI(text, image) {
+  const model = image ? MODEL_VL : MODEL_TEXT;
+
+  // 构造 messages
+  let userContent;
+  if (image) {
+    // 多模态：图文混合
+    userContent = [
+      { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.base64}` } },
+    ];
+    if (text) userContent.push({ type: 'text', text });
+    else      userContent.push({ type: 'text', text: '请识别这张账单/截图中的消费信息' });
+  } else {
+    userContent = text;
+  }
+
+  const body = {
+    model,
+    messages: [
+      { role: 'system', content: AI_SYSTEM_PROMPT },
+      { role: 'user',   content: userContent },
+    ],
+    max_tokens: 300,
+    temperature: 0.1,
+  };
+
+  const resp = await fetch(FRIDAY_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${FRIDAY_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${errText}`);
+  }
+
+  const data = await resp.json();
+
+  // 兼容 Friday 错误格式
+  if (data.status && data.status !== 200) {
+    throw new Error(data.message || `API 错误 ${data.status}`);
+  }
+
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new Error('AI 返回内容为空');
+
+  return parseAIResult(raw);
+}
+
+function parseAIResult(raw) {
+  // 去掉可能的 markdown 代码块
+  let cleaned = raw.trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  let obj;
+  try {
+    obj = JSON.parse(cleaned);
+  } catch {
+    // 尝试提取第一个 {...}
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('无法解析 AI 返回的 JSON');
+    obj = JSON.parse(match[0]);
+  }
+
+  // 校验 & 补全
+  const today = dayjs().format('YYYY-MM-DD');
+  return {
+    date:     obj.date     || today,
+    amount:   parseFloat(obj.amount) || 0,
+    category: obj.category || '其他',
+    payment:  obj.payment  || '微信/支付宝',
+    note:     obj.note     || '',
+  };
+}
+
+function fillExpenseForm(data) {
+  document.getElementById('expDate').value     = data.date;
+  document.getElementById('expAmount').value   = data.amount;
+  document.getElementById('expNote').value     = data.note;
+
+  // 设置 select
+  setSelectValue('expCategory', data.category);
+  setSelectValue('expPayment',  data.payment);
+
+  // 滚动到表单
+  document.getElementById('expDate').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function setSelectValue(id, value) {
+  const sel = document.getElementById(id);
+  for (const opt of sel.options) {
+    if (opt.value === value) { sel.value = value; return; }
+  }
+  // 找不到精确匹配，尝试模糊
+  for (const opt of sel.options) {
+    if (opt.value.includes(value) || value.includes(opt.value)) {
+      sel.value = opt.value; return;
+    }
+  }
+}
+
+function setAIStatus(msg, type = '') {
+  const el = document.getElementById('aiStatus');
+  el.textContent = msg;
+  el.className = 'ai-status' + (type ? ` ${type}` : '');
+}
+
 // ===== 启动 =====
 loadData();

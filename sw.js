@@ -6,7 +6,7 @@
      - Supabase API 请求            → 直接放行，不缓存
    ============================================================ */
 
-const CACHE_NAME = 'debt-manager-v3';  // 每次改这里，旧 SW 会被强制替换
+const CACHE_NAME = 'debt-manager-v4';  // 每次改这里，旧 SW 会被强制替换
 
 // 只缓存不常变的静态资源（CDN + 图标）
 const STATIC_CACHE = [
@@ -48,8 +48,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // 1. Supabase API → 完全不拦截，直接走网络
+  // 1. Supabase API / Friday AI API → 完全不拦截，直接走网络
   if (url.hostname.includes('supabase.co')) return;
+  if (url.hostname.includes('aigc.sankuai.com')) return;
 
   // 2. 本地 HTML / JS / CSS / JSON → Network First
   //    优先从网络拿最新版本，网络失败才降级缓存

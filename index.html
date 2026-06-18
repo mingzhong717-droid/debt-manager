@@ -169,6 +169,31 @@
   <!-- ========== PAGE: 消费记录 ========== -->
   <section class="page" id="page-expenses">
     <div class="section-title">每日消费录入</div>
+
+    <!-- AI 识别区 -->
+    <div class="ai-recognize-card card" id="aiRecognizeCard">
+      <div class="ai-card-header">
+        <span class="ai-icon">🤖</span>
+        <span class="ai-title">AI 智能识别</span>
+        <span class="ai-subtitle">发文字或图片，自动填写消费表单</span>
+      </div>
+      <div class="ai-input-row">
+        <textarea id="aiTextInput" class="ai-textarea" placeholder="例如：昨天在麦当劳吃饭花了38元，用招商信用卡付的" rows="2"></textarea>
+        <label class="ai-img-btn" for="aiImageInput" title="上传图片">
+          📷
+          <input type="file" id="aiImageInput" accept="image/*" style="display:none" />
+        </label>
+        <button class="ai-send-btn" id="aiSendBtn" title="发送">
+          <span id="aiSendIcon">➤</span>
+        </button>
+      </div>
+      <div class="ai-preview-row" id="aiImagePreviewRow" style="display:none">
+        <img id="aiImagePreview" src="" alt="预览" />
+        <button class="ai-remove-img" id="aiRemoveImg">✕</button>
+      </div>
+      <div class="ai-status" id="aiStatus"></div>
+    </div>
+
     <div class="expense-container">
       <div class="expense-form card">
         <h3>新增消费</h3>
