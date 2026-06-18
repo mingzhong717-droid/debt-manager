@@ -481,21 +481,17 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .catch(err => console.warn('SW registration failed:', err));
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 每次打开页面都主动检查 sw.js 是否有新版本（绕过浏览器对 SW 的24h检测限制）
+      reg.update();
+    }).catch(err => console.warn('SW registration failed:', err));
 
-    // 新 SW 激活（skipWaiting 后 controller 切换）→ Toast 提示后刷新
+    // 新 SW 激活（skipWaiting 后 controller 切换）→ 自动刷新页面
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloading) return;
       reloading = true;
-      // 用已有的 showToast 函数提示，延迟 800ms 再刷新让用户看到
-      if (typeof showToast === 'function') {
-        showToast('✅ 已更新到最新版本，正在刷新…');
-        setTimeout(() => window.location.reload(), 1200);
-      } else {
-        window.location.reload();
-      }
+      window.location.reload();
     });
   });
 }
