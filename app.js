@@ -44,6 +44,12 @@ let syncStatus = 'idle'; // idle | syncing | ok | error
 const fmt = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtDecimal = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (n) => (n * 100).toFixed(1) + '%';
+// 日历格子内简写：≥10000 → x.xw，≥1000 → x.xk，否则正常
+const fmtShort = (n) => {
+  if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+  if (n >= 1000)  return (n / 1000).toFixed(1) + 'k';
+  return Math.round(n).toString();
+};
 const today = dayjs();
 
 // ===== Supabase API 封装（带超时）=====
@@ -746,28 +752,27 @@ function renderBarChart() {
 
 // ===== 还款日历 =====
 function buildDueDays(month) {
-  // 返回 { day: [{bankName, accountName, amount, color}] }
+  // 返回 { day: [{bankName, accountName, amount, color, type}] }
   const dueDays = {};
 
   DATA.banks.forEach(bank => {
     bank.accounts.forEach(acc => {
       const dueDay = acc.dueDay;
+      if (!dueDay) return;
       if (!dueDays[dueDay]) dueDays[dueDay] = [];
 
       let amount = 0;
-      if (acc.type === 'credit') {
-        amount = acc.minPayment || 0;
-        acc.installments?.forEach(inst => {
-          const endDate = dayjs(inst.endDate);
-          if (month.isBefore(endDate) || month.isSame(endDate, 'month')) {
-            amount += inst.monthlyPayment || 0;
-          }
-        });
-      } else {
+      let typeName = '';
+      if (acc.type === 'loan') {
         const endDate = dayjs(acc.endDate || '2099-01-01');
         if (month.isBefore(endDate) || month.isSame(endDate, 'month')) {
           amount = acc.monthlyPayment || 0;
+          typeName = '贷款';
         }
+      } else if (acc.type === 'credit') {
+        // 只用 minPayment，不重复加分期月供
+        amount = acc.minPayment || 0;
+        typeName = amount > 0 ? '信用卡账单' : '';
       }
 
       if (amount > 0) {
@@ -775,13 +780,51 @@ function buildDueDays(month) {
           bankName: bank.shortName,
           accountName: acc.name,
           amount,
-          color: bank.color
+          color: bank.color,
+          type: typeName
         });
       }
     });
   });
 
   return dueDays;
+}
+
+function openCalDrawer(dateStr, dues) {
+  const mask = document.getElementById('calDrawerMask');
+  const drawer = document.getElementById('calDrawer');
+  const title = document.getElementById('calDrawerTitle');
+  const list = document.getElementById('calDrawerList');
+  const totalEl = document.getElementById('calDrawerTotal');
+
+  title.textContent = dateStr + ' 还款详情';
+
+  let listHTML = '';
+  let total = 0;
+  dues.forEach(item => {
+    total += item.amount;
+    listHTML += `
+      <div class="calendar-drawer-item">
+        <div class="calendar-drawer-item-left">
+          <div class="calendar-drawer-dot" style="background:${item.color}"></div>
+          <div>
+            <div class="calendar-drawer-bank">${item.bankName}</div>
+            <div class="calendar-drawer-type">${item.accountName}${item.type ? ' · ' + item.type : ''}</div>
+          </div>
+        </div>
+        <div class="calendar-drawer-amount">-${fmt(item.amount)}</div>
+      </div>`;
+  });
+  list.innerHTML = listHTML;
+  totalEl.innerHTML = `<span>合计应还</span><span class="calendar-drawer-total-amt">-${fmt(total)}</span>`;
+
+  mask.classList.add('open');
+  drawer.classList.add('open');
+}
+
+function closeCalDrawer() {
+  document.getElementById('calDrawerMask').classList.remove('open');
+  document.getElementById('calDrawer').classList.remove('open');
 }
 
 function renderCalendar(month) {
@@ -792,22 +835,28 @@ function renderCalendar(month) {
   const firstDay = month.startOf('month').day(); // 0=周日
   const daysInMonth = month.daysInMonth();
   const todayDay = today.isSame(month, 'month') ? today.date() : -1;
+  const isCurrentMonth = today.isSame(month, 'month');
 
   const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
 
   let html = `
     <div class="calendar-header">
-      <span class="calendar-month">${month.format('YYYY年M月')}</span>
-      <div class="calendar-nav">
-        <button id="calPrev">‹</button>
-        <button id="calNext">›</button>
+      <div class="calendar-header-left">
+        <div class="calendar-nav">
+          <button id="calPrev">‹</button>
+        </div>
+        <span class="calendar-month">${month.format('YYYY年M月')}</span>
+        <div class="calendar-nav">
+          <button id="calNext">›</button>
+        </div>
       </div>
+      ${!isCurrentMonth ? '<button class="calendar-today-btn" id="calToday">今天</button>' : ''}
     </div>
     <div class="calendar-grid">
       ${weekdays.map(d => `<div class="calendar-weekday">${d}</div>`).join('')}
   `;
 
-  // 空格
+  // 空格（周日=0，周一=1...）
   for (let i = 0; i < firstDay; i++) {
     html += '<div class="calendar-day empty"></div>';
   }
@@ -816,31 +865,62 @@ function renderCalendar(month) {
     const dues = dueDays[d] || [];
     const isToday = d === todayDay;
     const hasDue = dues.length > 0;
+    const dow = (firstDay + d - 1) % 7; // 0=日,6=六
+    const isSun = dow === 0;
+    const isSat = dow === 6;
 
-    let tooltipHTML = '';
-    let dotsHTML = '';
+    let amountsHTML = '';
     if (hasDue) {
-      tooltipHTML = dues.map(item =>
-        `<div style="color:${item.color}">${item.bankName} ${item.accountName}: ${fmt(item.amount)}</div>`
-      ).join('');
-      dotsHTML = dues.map(item =>
-        `<div class="day-dot" style="background:${item.color}"></div>`
-      ).join('');
+      const total = dues.reduce((s, x) => s + x.amount, 0);
+      if (dues.length === 1) {
+        amountsHTML = `<div class="day-amounts"><span class="day-amount-total">-${fmtShort(total)}</span></div>`;
+      } else {
+        // 多笔：只显示合计，避免格子太挤
+        amountsHTML = `<div class="day-amounts">
+          <span class="day-amount-item">${dues.length}笔</span>
+          <span class="day-amount-total">-${fmtShort(total)}</span>
+        </div>`;
+      }
     }
 
+    const classes = [
+      'calendar-day',
+      isToday ? 'today' : '',
+      hasDue ? 'has-due' : '',
+      isSun ? 'is-sun' : '',
+      isSat ? 'is-sat' : '',
+    ].filter(Boolean).join(' ');
+
+    const dataAttr = hasDue ? `data-day="${d}"` : '';
+
     html += `
-      <div class="calendar-day ${isToday ? 'today' : ''} ${hasDue ? 'has-due' : ''}">
+      <div class="${classes}" ${dataAttr}>
         <span class="day-num">${d}</span>
-        ${dotsHTML ? `<div class="day-dots">${dotsHTML}</div>` : ''}
-        ${tooltipHTML ? `<div class="calendar-tooltip">${tooltipHTML}</div>` : ''}
+        ${amountsHTML}
       </div>`;
   }
 
   html += '</div>';
   container.innerHTML = html;
 
+  // 导航事件
   document.getElementById('calPrev').addEventListener('click', () => renderCalendar(calendarDate.subtract(1, 'month')));
   document.getElementById('calNext').addEventListener('click', () => renderCalendar(calendarDate.add(1, 'month')));
+  const todayBtn = document.getElementById('calToday');
+  if (todayBtn) todayBtn.addEventListener('click', () => renderCalendar(dayjs()));
+
+  // 点击有还款的格子 → 弹出抽屉
+  container.querySelectorAll('.calendar-day.has-due').forEach(el => {
+    el.addEventListener('click', () => {
+      const d = parseInt(el.dataset.day);
+      const dues = dueDays[d] || [];
+      const dateStr = month.date(d).format('M月D日');
+      openCalDrawer(dateStr, dues);
+    });
+  });
+
+  // 抽屉关闭
+  document.getElementById('calDrawerMask').onclick = closeCalDrawer;
 }
 
 // ===== 分期追踪 =====
