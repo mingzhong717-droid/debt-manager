@@ -57,7 +57,7 @@
           "currentBillEnd": "2026-06-21",
           "currentDueDate": "2026-06-21",
           "interestRate": 0.0005,
-          "note": "6月账单4,388.33元，2026-06-21到期，含旧分期第5期2,613.28元。⏳ 新分期未决定，待6月21日后确认是否办理",
+          "note": "6月账单4,388.33元（含旧分期第5期2,613.28元+循环利息309.02元+其他消费1,466.03元），2026-06-21到期。7月起账单变为旧分期第6期2,613.28元。⚠️ 新分期尚未办理，待决策",
           "installments": [
             {
               "id": "cmb-inst-old",
@@ -94,40 +94,40 @@
           "currentBillEnd": "2026-06-13",
           "currentDueDate": "2026-07-02",
           "interestRate": 0.0005,
-          "note": "6月账单702.20元（账单日6月13日），2026-07-02到期",
+          "note": "7月账单702.20元（账单日6月13日），2026-07-02到期。702.20元=三笔分期第11期合计（本金611.89+利息90.31），未来月份通过installments逐月递减计算",
           "installments": [
             {
               "id": "gz-inst-1",
               "name": "消费分期一（36期）",
               "originalAmount": 8693.08,
               "remainingAmount": 6741.71,
-              "monthlyPayment": 241.47,
+              "monthlyPayment": 275.80,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
-              "note": "剩余本金6,278.35+利息463.36，每月逐减"
+              "note": "剩余本金6,278.35+利息463.36，第11期月供275.80（本金241.48+利息34.32），逐月递减至末期242.83"
             },
             {
               "id": "gz-inst-2",
               "name": "消费分期二（36期）",
               "originalAmount": 196.0,
               "remainingAmount": 152.04,
-              "monthlyPayment": 5.44,
+              "monthlyPayment": 6.22,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
-              "note": "剩余本金141.57+利息10.47"
+              "note": "剩余本金141.57+利息10.47，第11期月供6.22（本金5.45+利息0.77），逐月递减至末期5.46"
             },
             {
               "id": "gz-inst-3",
               "name": "账单分期三（36期）",
               "originalAmount": 13139.34,
               "remainingAmount": 10189.87,
-              "monthlyPayment": 364.98,
+              "monthlyPayment": 416.86,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
-              "note": "剩余本金9,489.54+利息700.33"
+              "note": "剩余本金9,489.54+利息700.33，第11期月供416.86（本金364.98+利息51.88），逐月递减至末期366.97"
             }
           ]
         }
@@ -149,11 +149,12 @@
           "billDay": 28,
           "dueDay": 28,
           "minPayment": 15656.33,
+          "minPaymentOneTime": true,
           "currentBillStart": "2026-04-29",
           "currentBillEnd": "2026-05-28",
           "currentDueDate": "2026-07-17",
           "interestRate": 0.0005,
-          "note": "5月账单剩余待还15,656.33元（已还1,826.21元），6月未出账7,036.61元（6月28日出账）",
+          "note": "5月账单剩余待还15,656.33元（已还1,826.21元，一次性历史欠款，非每月固定），6月未出账7,036.61元（6月28日出账）。7月起月供=现金分期659.66+商户分期138.05=797.71元",
           "installments": [
             {
               "id": "spdb-inst-cash",

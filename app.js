@@ -669,13 +669,20 @@ function renderBarChart() {
             total += acc.monthlyPayment || 0;
           }
         } else if (acc.type === 'credit') {
-          total += acc.minPayment || 0;
-          acc.installments?.forEach(inst => {
-            const endDate = dayjs(inst.endDate);
-            if (m.isBefore(endDate) || m.isSame(endDate, 'month')) {
-              total += inst.monthlyPayment || 0;
-            }
-          });
+          if (i === 0) {
+            // 当月：用实际账单minPayment（已含当期分期，不重复加installments）
+            // minPaymentOneTime=true 表示一次性历史欠款（如浦发5月账单剩余），只计当月
+            total += acc.minPayment || 0;
+          } else {
+            // 未来月份：用各分期月供之和估算（minPayment每月出账后才知道）
+            // minPaymentOneTime的一次性欠款不计入未来月份
+            acc.installments?.forEach(inst => {
+              const endDate = dayjs(inst.endDate);
+              if (m.isBefore(endDate) || m.isSame(endDate, 'month')) {
+                total += inst.monthlyPayment || 0;
+              }
+            });
+          }
         }
       });
     });
