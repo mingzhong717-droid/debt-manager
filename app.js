@@ -42,6 +42,7 @@ let syncStatus = 'idle'; // idle | syncing | ok | error
 
 // ===== 工具函数 =====
 const fmt = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmtDecimal = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (n) => (n * 100).toFixed(1) + '%';
 const today = dayjs();
 
@@ -394,7 +395,7 @@ function renderSummaryBanner() {
   const totalWallet = wallets.reduce((s, w) => s + (w.balance || 0), 0);
   const walletEl = document.getElementById('totalWalletBalance');
   if (walletEl) {
-    walletEl.textContent = fmt(totalWallet);
+    walletEl.textContent = fmtDecimal(totalWallet);
     walletEl.className = 'summary-value ' + (totalWallet >= monthlyDue ? 'success' : 'warning');
   }
 
@@ -402,7 +403,7 @@ function renderSummaryBanner() {
   const balance = totalWallet - monthlyDue;
   const balanceEl = document.getElementById('monthlyBalance');
   if (balanceEl) {
-    balanceEl.textContent = fmt(balance);
+    balanceEl.textContent = fmtDecimal(balance);
     balanceEl.className = 'summary-value ' + (balance >= 0 ? 'success' : 'danger');
   }
 
@@ -445,14 +446,14 @@ function renderWallets() {
       <div class="wallet-card">
         <div class="wallet-card-icon">${w.icon}</div>
         <div class="wallet-card-name">${w.name}</div>
-        <div class="wallet-card-balance">${fmt(w.balance)}</div>
+        <div class="wallet-card-balance">${fmtDecimal(w.balance)}</div>
       </div>`;
   });
   html += `</div>`;
   html += `<div class="wallet-cover-tip ${canCover ? 'ok' : 'warn'}">
     ${canCover
-      ? `✅ 余额合计 ${fmt(totalWallet)}，可覆盖本月应还 ${fmt(monthlyDue)}`
-      : `⚠️ 余额合计 ${fmt(totalWallet)}，距本月应还 ${fmt(monthlyDue)} 还差 ${fmt(monthlyDue - totalWallet)}`}
+      ? `✅ 余额合计 ${fmtDecimal(totalWallet)}，可覆盖本月应还 ${fmt(monthlyDue)}`
+      : `⚠️ 余额合计 ${fmtDecimal(totalWallet)}，距本月应还 ${fmt(monthlyDue)} 还差 ${fmt(monthlyDue - totalWallet)}`}
   </div>`;
   panel.innerHTML = html;
 
