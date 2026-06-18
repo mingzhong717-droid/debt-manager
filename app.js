@@ -1794,27 +1794,49 @@ async function handleAISend() {
 
     // 如果有图片：先用 LongCat-VL 单独识别，把结果转成文字合并进主线
     if (hasImg) {
-      setAIStatus('图片识别中（LongCat-VL）...', 'loading');
+      setAIStatus('图片识别中...', 'loading');
+      // 先推一个"识别中"占位气泡，显示打点动画
+      aiChatBubbles.push({ role: 'ai', text: '⏳ 图片识别中', parsed: null, streaming: true });
+      renderAIChat();
       const vlResult = await callVLModel(text, { base64: aiImageBase64, mime: aiImageMime });
-      // 把图片识别结果作为用户消息的补充文字，注入主线
+      // 识别完成，移除占位气泡
+      aiChatBubbles.pop();
       userMsgForMain = `[图片识别结果] ${vlResult}\n${text ? '用户补充：' + text : ''}`.trim();
     }
 
     // 加入主线对话历史
     aiConversation.push({ role: 'user', content: userMsgForMain });
 
-    // 用 deepseek 主线推理，带完整上下文
-    setAIStatus('AI 解析中（DeepSeek）...', 'loading');
-    const raw = await callMainModel(aiConversation);
+    // 推一个空的流式气泡，流式输出时实时更新
+    setAIStatus('AI 思考中...', 'loading');
+    const streamBubble = { role: 'ai', text: '', parsed: null, streaming: true };
+    aiChatBubbles.push(streamBubble);
+    renderAIChat();
+
+    // 流式调用主线模型
+    const raw = await callMainModel(aiConversation, (partialText) => {
+      streamBubble.text = partialText;
+      // 实时更新最后一个气泡的文字，不重绘整个列表（性能优化）
+      const el = document.getElementById('aiChatHistory');
+      const bubbles = el.querySelectorAll('.ai-bubble-ai');
+      const last = bubbles[bubbles.length - 1];
+      if (last) {
+        const span = last.querySelector('span');
+        if (span) span.textContent = partialText;
+      }
+      el.scrollTop = el.scrollHeight;
+    });
+
+    // 流结束，标记非流式状态
+    streamBubble.streaming = false;
+    streamBubble.text = raw;
 
     // 把 AI 回复加入主线历史
     aiConversation.push({ role: 'assistant', content: raw });
 
-    // 解析 JSON
+    // 解析 JSON，重新渲染最终气泡（带确认按钮等）
     const parsed = parseAIResult(raw);
-
-    // 渲染 AI 气泡
-    aiChatBubbles.push({ role: 'ai', text: raw, parsed });
+    streamBubble.parsed = parsed;
     renderAIChat();
 
     // 根据意图执行操作
@@ -1866,19 +1888,63 @@ async function callVLModel(text, image) {
   return data.choices?.[0]?.message?.content || '';
 }
 
-// 调用 deepseek 主线，带完整对话历史
-async function callMainModel(conversation) {
+// 调用主线模型（流式），onChunk(text) 每收到一段就回调
+async function callMainModel(conversation, onChunk) {
   const messages = [
     { role: 'system', content: AI_SYSTEM_PROMPT },
     ...conversation,
   ];
-  const data = await fridayRequest(MODEL_TEXT, messages, 300);
-  const raw = data.choices?.[0]?.message?.content;
-  if (!raw) throw new Error('AI 返回内容为空');
-  return raw;
+  const resp = await fetch(FRIDAY_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${FRIDAY_TOKEN}`,
+    },
+    body: JSON.stringify({
+      model: MODEL_TEXT,
+      messages,
+      max_new_tokens: 400,
+      temperature: 0.1,
+      stream: true,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${t}`);
+  }
+  // 读取 SSE 流
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop(); // 最后一行可能不完整，留到下次
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === 'data: [DONE]') continue;
+      if (!trimmed.startsWith('data:')) continue;
+      try {
+        const json = JSON.parse(trimmed.slice(5).trim());
+        // 兼容两种格式：delta.content 或 choices[0].message.content
+        const chunk = json.choices?.[0]?.delta?.content
+          || json.choices?.[0]?.message?.content
+          || '';
+        if (chunk) {
+          full += chunk;
+          onChunk && onChunk(full);
+        }
+      } catch { /* 忽略解析失败的行 */ }
+    }
+  }
+  if (!full) throw new Error('AI 返回内容为空');
+  return full;
 }
 
-// 底层 fetch 封装
+// 底层 fetch 封装（非流式，用于 VL 识别、消费分析等）
 async function fridayRequest(model, messages, maxTokens = 300) {
   const resp = await fetch(FRIDAY_API, {
     method: 'POST',
@@ -2048,7 +2114,8 @@ function renderAIChat() {
       return `<div class="ai-bubble ai-bubble-user">${imgHtml}${txt}</div>`;
     } else {
       if (!b.parsed) {
-        return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span></div>`;
+        const streamingDots = b.streaming ? `<span class="ai-typing-dots"><span>.</span><span>.</span><span>.</span></span>` : '';
+        return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span>${streamingDots}</div>`;
       }
       const p = b.parsed;
       const intent = p.intent || 'add_expense';

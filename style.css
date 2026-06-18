@@ -1394,6 +1394,30 @@ input:focus, select:focus, textarea:focus {
 .ai-status.error { color: var(--danger); }
 .ai-status.loading { color: var(--accent); }
 
+/* ===== AI 流式打点动画 ===== */
+.ai-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.ai-typing-dots span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ai-dot-bounce 1.2s infinite ease-in-out;
+}
+.ai-typing-dots span:nth-child(1) { animation-delay: 0s; }
+.ai-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+
 /* ===== 消费记录操作按钮 ===== */
 .action-btns {
   display: flex;
