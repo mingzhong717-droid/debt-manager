@@ -2,38 +2,110 @@
    个人负债管理中心 - app.js
    ============================================================ */
 
+// ===== Supabase 配置 =====
+const SUPABASE_URL = 'https://ejqhzdckdamssligyjcq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_-8AFKDoWn61Z9uwRJQJ3AA_Cfxhkpc5';
+const DATA_ROW_ID = 1; // 固定用第1行存储负债数据
+const EXPENSE_TABLE = 'expenses';
+const DEBT_TABLE = 'debt_data';
+
 // ===== 全局状态 =====
 let DATA = null;
 let pieChart = null;
 let barChart = null;
 let expensePieChart = null;
 let calendarDate = dayjs();
+let syncStatus = 'idle'; // idle | syncing | ok | error
 
 // ===== 工具函数 =====
 const fmt = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtPct = (n) => (n * 100).toFixed(1) + '%';
 const today = dayjs();
 
-// ===== 数据加载 =====
+// ===== Supabase API 封装 =====
+async function sbFetch(path, options = {}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || 'return=representation',
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function setSyncStatus(status) {
+  syncStatus = status;
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const map = {
+    syncing: { text: '⏳ 同步中...', color: '#ffa94d' },
+    ok:      { text: '☁️ 已同步',   color: '#00d4aa' },
+    error:   { text: '⚠️ 同步失败', color: '#ff4d6d' },
+    idle:    { text: '📱 本地模式', color: '#8892b0' }
+  };
+  const s = map[status] || map.idle;
+  el.textContent = s.text;
+  el.style.color = s.color;
+}
+
+// ===== 数据加载（优先云端，降级本地）=====
 async function loadData() {
   try {
-    // 优先从 localStorage 读取（用户编辑过的数据）
+    setSyncStatus('syncing');
+    // 尝试从 Supabase 读取
+    const rows = await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID + '&select=payload');
+    if (rows && rows.length > 0 && rows[0].payload) {
+      DATA = rows[0].payload;
+      localStorage.setItem('debtManagerData', JSON.stringify(DATA));
+      setSyncStatus('ok');
+    } else {
+      throw new Error('云端无数据');
+    }
+  } catch (e) {
+    console.warn('云端加载失败，降级本地:', e.message);
+    // 降级：本地 localStorage
     const saved = localStorage.getItem('debtManagerData');
     if (saved) {
       DATA = JSON.parse(saved);
     } else {
+      // 最后降级：data.json
       const res = await fetch('data.json');
       DATA = await res.json();
     }
-    init();
-  } catch (e) {
-    console.error('数据加载失败', e);
-    document.body.innerHTML = '<div style="padding:40px;color:#ff4d6d;font-size:1.1rem">⚠️ 数据加载失败，请确保 data.json 存在且格式正确。<br><small>' + e.message + '</small></div>';
+    setSyncStatus('error');
   }
+
+  if (!DATA) {
+    document.body.innerHTML = '<div style="padding:40px;color:#ff4d6d">⚠️ 数据加载失败</div>';
+    return;
+  }
+  init();
 }
 
-function saveData() {
+// ===== 保存数据（同时写云端 + 本地）=====
+async function saveData() {
   localStorage.setItem('debtManagerData', JSON.stringify(DATA));
+  try {
+    setSyncStatus('syncing');
+    await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: JSON.stringify({ payload: DATA, updated_at: new Date().toISOString() })
+    });
+    setSyncStatus('ok');
+  } catch (e) {
+    console.warn('云端保存失败:', e.message);
+    setSyncStatus('error');
+  }
 }
 
 // ===== 初始化 =====
@@ -682,7 +754,7 @@ function simulatePayoff(balance, monthlyPayment, monthlyRate) {
 }
 
 // ===== 消费记录 =====
-function initExpenses() {
+async function initExpenses() {
   // 设置默认日期
   document.getElementById('expDate').value = today.format('YYYY-MM-DD');
   document.getElementById('expFilterMonth').value = today.format('YYYY-MM');
@@ -691,16 +763,50 @@ function initExpenses() {
   document.getElementById('expFilterMonth').addEventListener('change', renderExpenseTable);
   document.getElementById('clearExpenses').addEventListener('click', clearMonthExpenses);
 
+  // 尝试从云端加载最新消费记录
+  await loadExpensesFromCloud();
+
   renderExpenseTable();
   renderExpenseStats();
+}
+
+async function loadExpensesFromCloud() {
+  try {
+    const rows = await sbFetch(EXPENSE_TABLE + '?order=date.desc&limit=500');
+    if (rows && rows.length > 0) {
+      const expenses = rows.map(r => ({ id: r.id, date: r.date, amount: r.amount, category: r.category, payment: r.payment, note: r.note }));
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+    }
+  } catch (e) {
+    console.warn('消费记录云端加载失败:', e.message);
+  }
 }
 
 function getExpenses() {
   return JSON.parse(localStorage.getItem('expenses') || '[]');
 }
 
-function saveExpenses(expenses) {
+async function saveExpenses(expenses) {
   localStorage.setItem('expenses', JSON.stringify(expenses));
+  // 同步到 Supabase（全量覆盖当月）
+  try {
+    // 先删除再插入，简单粗暴但可靠
+    const month = today.format('YYYY-MM');
+    await sbFetch(EXPENSE_TABLE + '?month=eq.' + month, {
+      method: 'DELETE',
+      prefer: 'return=minimal'
+    });
+    if (expenses.length > 0) {
+      const rows = expenses.map(e => ({ ...e, month: e.date.slice(0, 7) }));
+      await sbFetch(EXPENSE_TABLE, {
+        method: 'POST',
+        prefer: 'return=minimal',
+        body: JSON.stringify(rows)
+      });
+    }
+  } catch (e) {
+    console.warn('消费记录云端同步失败:', e.message);
+  }
 }
 
 function addExpense() {

@@ -66,6 +66,15 @@ body {
   border-radius: 20px;
 }
 
+.sync-status {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg3);
+  padding: 2px 8px;
+  border-radius: 20px;
+  transition: color 0.3s ease;
+}
+
 .topbar-nav {
   display: flex;
   gap: 4px;
