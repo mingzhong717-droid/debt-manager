@@ -15,8 +15,10 @@
   <link rel="apple-touch-icon" href="icon-192.png" />
 
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+    onerror="console.warn('[CDN] chart.js 加载失败，图表功能不可用')"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"
+    onerror="document.body.innerHTML='<div style=padding:40px;color:#ff4d6d;text-align:center>⚠️ 核心库加载失败，请检查网络后刷新页面</div>'"></script>
 </head>
 <body>
 
@@ -477,57 +479,55 @@
 
 <script src="app.js"></script>
 
-<!-- Service Worker 注册 & 强制更新 -->
+<!-- Service Worker 注册 & 自动更新 -->
 <script>
-// ⚠️ 每次发布新版本，修改这个版本号，浏览器会自动清除旧缓存并刷新
-const APP_VERSION = 'v11';
-
-(async function() {
+(function() {
   if (!('serviceWorker' in navigator)) return;
 
-  // 检查是否需要强制清除（版本号变了）
-  const storedVer = localStorage.getItem('appVersion');
-  if (storedVer !== APP_VERSION) {
-    console.log(`[SW] 版本变更 ${storedVer} → ${APP_VERSION}，清除旧缓存...`);
-    // 1. 注销所有旧 SW
-    const regs = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(regs.map(r => r.unregister()));
-    // 2. 清空所有 Cache Storage
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-    // 3. 记录新版本号
-    localStorage.setItem('appVersion', APP_VERSION);
-    // 4. 强制刷新（绕过缓存）
-    window.location.reload(true);
-    return; // 刷新后重新执行，不继续往下走
+  // 防重入标志
+  let reloading = false;
+
+  function doReload() {
+    if (reloading) return;
+    reloading = true;
+    console.log('[SW] 新版本已激活，自动刷新页面...');
+    window.location.reload();
   }
 
-  // 版本一致：正常注册 SW
-  window.addEventListener('load', () => {
-    let reloading = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    });
-
-    function forceActivateWaiting(reg) {
-      if (reg.waiting) { reg.waiting.postMessage('skipWaiting'); return; }
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        if (!newSW) return;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            newSW.postMessage('skipWaiting');
-          }
-        });
-      });
+  // 监听 SW 主动推送的更新通知（新 SW 激活后会发这条消息）
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SW_UPDATED') {
+      console.log('[SW] 收到更新通知:', event.data.version);
+      doReload();
     }
+  });
 
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      forceActivateWaiting(reg);
-      reg.update().then(() => forceActivateWaiting(reg));
-    }).catch(err => console.warn('SW registration failed:', err));
+  // controllerchange = 新 SW 接管了页面，也触发刷新
+  navigator.serviceWorker.addEventListener('controllerchange', doReload);
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        console.log('[SW] 注册成功，检查更新...');
+        // 如果已有 waiting 的新 SW，立即激活
+        if (reg.waiting) {
+          reg.waiting.postMessage('skipWaiting');
+        }
+        // 监听新 SW 安装
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing;
+          if (!newSW) return;
+          newSW.addEventListener('statechange', () => {
+            // installed = 下载完成，等待激活
+            if (newSW.state === 'installed') {
+              newSW.postMessage('skipWaiting');
+            }
+          });
+        });
+        // 主动检查是否有新版本（每次打开 APP 都检查）
+        reg.update().catch(() => {});
+      })
+      .catch(err => console.warn('[SW] 注册失败:', err));
   });
 })();
 </script>

@@ -49,10 +49,13 @@
           "type": "credit",
           "name": "招商信用卡",
           "totalDebt": 4388.33,
-          "creditLimit": 0,
+          "creditLimit": 60000,
           "billDay": 21,
           "dueDay": 21,
           "minPayment": 4388.33,
+          "currentBillStart": "2026-05-22",
+          "currentBillEnd": "2026-06-21",
+          "currentDueDate": "2026-06-21",
           "interestRate": 0.0005,
           "note": "6月账单当期应还，2026-06-21到期，含旧分期第5期2,613.28元，🔴 已到期",
           "installments": [
@@ -97,9 +100,12 @@
           "creditLimit": 24000,
           "billDay": 13,
           "dueDay": 2,
-          "minPayment": 702.2,
+          "minPayment": 702.20,
+          "currentBillStart": "2026-05-14",
+          "currentBillEnd": "2026-06-13",
+          "currentDueDate": "2026-07-02",
           "interestRate": 0.0005,
-          "note": "7月已出账账单702.20元，2026-07-02到期，🔴 本周内",
+          "note": "6月账单702.20元（账单日6月13日），2026-07-02到期",
           "installments": [
             {
               "id": "gz-inst-1",
@@ -153,9 +159,12 @@
           "creditLimit": 28000,
           "billDay": 28,
           "dueDay": 28,
-          "minPayment": 7036.61,
+          "minPayment": 15656.33,
+          "currentBillStart": "2026-04-29",
+          "currentBillEnd": "2026-05-28",
+          "currentDueDate": "2026-07-17",
           "interestRate": 0.0005,
-          "note": "5月账单剩余待还15,656.33元+6月未出账7,036.61元（6月28日出账）",
+          "note": "5月账单剩余待还15,656.33元（已还1,826.21元），6月未出账7,036.61元（6月28日出账）",
           "installments": [
             {
               "id": "spdb-inst-cash",
@@ -199,8 +208,11 @@
           "billDay": 17,
           "dueDay": 6,
           "minPayment": 2941.68,
+          "currentBillStart": "2026-05-18",
+          "currentBillEnd": "2026-06-17",
+          "currentDueDate": "2026-07-06",
           "interestRate": 0.0048,
-          "note": "6月未出账单2,941.68元，还款日2026-07-06，含三笔分期当期",
+          "note": "6月账单2,941.68元（账单日6月17日），还款日2026-07-06，含三笔分期当期",
           "installments": [
             {
               "id": "abc-inst-1",
@@ -255,8 +267,11 @@
           "billDay": 19,
           "dueDay": 9,
           "minPayment": 3510.86,
+          "currentBillStart": "2026-05-20",
+          "currentBillEnd": "2026-06-19",
+          "currentDueDate": "2026-07-09",
           "interestRate": 0.0045,
-          "note": "临时额度56,000元（2026-07-18到期），永久额度40,000元",
+          "note": "6月账单3,510.86元（账单日6月19日），还款日2026-07-09，临时额度56,000元（2026-07-18到期），永久额度40,000元",
           "installments": [
             {
               "id": "cmbc-inst-1",

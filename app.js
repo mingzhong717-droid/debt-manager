@@ -45,25 +45,32 @@ const fmt = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDig
 const fmtPct = (n) => (n * 100).toFixed(1) + '%';
 const today = dayjs();
 
-// ===== Supabase API 封装 =====
+// ===== Supabase API 封装（带超时）=====
 async function sbFetch(path, options = {}) {
-  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-    ...options,
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': options.prefer || 'return=representation',
-      'Cache-Control': 'no-cache',
-      ...(options.headers || {})
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000); // 10秒超时
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': options.prefer || 'return=representation',
+        'Cache-Control': 'no-cache',
+        ...(options.headers || {})
+      }
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`HTTP ${res.status}: ${err}`);
     }
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } finally {
+    clearTimeout(timer);
   }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
 }
 
 function setSyncStatus(status) {
@@ -81,81 +88,256 @@ function setSyncStatus(status) {
   el.style.color = s.color;
 }
 
-// ===== 数据加载（强制云端优先，localStorage 仅作离线降级）=====
-const CACHE_VERSION = '2';  // 升级此版本号可强制清除旧缓存
+// ===== 数据加载（三层降级 + 完整性校验）=====
+const CACHE_VERSION = '3';  // 升级此版本号可强制清除旧缓存
+
+// 数据完整性校验：必须有 banks 数组且不为空
+function isValidData(d) {
+  return d && Array.isArray(d.banks) && d.banks.length > 0 && d.meta;
+}
+
+// 保存到 IndexedDB（localStorage 的备份层，容量更大，不会被浏览器自动清除）
+async function idbSave(key, value) {
+  try {
+    const db = await new Promise((res, rej) => {
+      const req = indexedDB.open('DebtManagerDB', 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = rej;
+    });
+    await new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(value, key);
+      tx.oncomplete = res;
+      tx.onerror = rej;
+    });
+  } catch (e) {
+    console.warn('[IDB] 写入失败:', e);
+  }
+}
+
+async function idbLoad(key) {
+  try {
+    const db = await new Promise((res, rej) => {
+      const req = indexedDB.open('DebtManagerDB', 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = rej;
+    });
+    return await new Promise((res, rej) => {
+      const tx = db.transaction('kv', 'readonly');
+      const req = tx.objectStore('kv').get(key);
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = rej;
+    });
+  } catch (e) {
+    console.warn('[IDB] 读取失败:', e);
+    return null;
+  }
+}
+
 async function loadData() {
   // 清除版本不匹配的旧缓存
   if (localStorage.getItem('debtManagerCacheVer') !== CACHE_VERSION) {
     localStorage.removeItem('debtManagerData');
     localStorage.setItem('debtManagerCacheVer', CACHE_VERSION);
-    console.log('检测到旧缓存，已清除，将从云端重新加载');
+    console.log('[Data] 检测到旧缓存，已清除');
   }
 
+  let cloudData = null;
+  let localData = null;
+  let idbData   = null;
+
+  // === 第1层：云端 Supabase ===
   try {
     setSyncStatus('syncing');
-    // 强制从 Supabase 读取（不走缓存）
-    const rows = await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID + '&select=payload');
+    const rows = await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID + '&select=payload,updated_at');
     if (rows && rows.length > 0 && rows[0].payload) {
-      DATA = rows[0].payload;
-      localStorage.setItem('debtManagerData', JSON.stringify(DATA));
-      setSyncStatus('ok');
+      const candidate = rows[0].payload;
+      if (isValidData(candidate)) {
+        cloudData = candidate;
+        // 同步写入本地两层缓存
+        localStorage.setItem('debtManagerData', JSON.stringify(cloudData));
+        await idbSave('debtManagerData', cloudData);
+        setSyncStatus('ok');
+        console.log('[Data] 云端加载成功');
+      } else {
+        console.error('[Data] 云端数据校验失败，拒绝使用！', candidate);
+        setSyncStatus('error');
+      }
     } else {
       throw new Error('云端无数据');
     }
   } catch (e) {
-    console.warn('云端加载失败，降级本地:', e.message);
-    // 降级：本地 localStorage
-    const saved = localStorage.getItem('debtManagerData');
-    if (saved) {
-      DATA = JSON.parse(saved);
-    } else {
-      // 最后降级：data.json
-      const res = await fetch('data.json');
-      DATA = await res.json();
-    }
+    console.warn('[Data] 云端加载失败:', e.message);
     setSyncStatus('error');
   }
 
-  if (!DATA) {
-    document.body.innerHTML = '<div style="padding:40px;color:#ff4d6d">⚠️ 数据加载失败</div>';
+  if (cloudData) {
+    DATA = cloudData;
+    init();
     return;
   }
-  init();
+
+  // === 第2层：localStorage ===
+  try {
+    const saved = localStorage.getItem('debtManagerData');
+    if (saved) {
+      const candidate = JSON.parse(saved);
+      if (isValidData(candidate)) {
+        localData = candidate;
+        console.warn('[Data] 降级使用 localStorage 数据');
+      }
+    }
+  } catch (e) {
+    console.warn('[Data] localStorage 读取失败:', e);
+  }
+
+  if (localData) {
+    DATA = localData;
+    showToast('⚠️ 云端连接失败，使用本地缓存数据', 5000);
+    init();
+    return;
+  }
+
+  // === 第3层：IndexedDB ===
+  idbData = await idbLoad('debtManagerData');
+  if (idbData && isValidData(idbData)) {
+    DATA = idbData;
+    console.warn('[Data] 降级使用 IndexedDB 数据');
+    showToast('⚠️ 云端连接失败，使用 IndexedDB 备份数据', 5000);
+    init();
+    return;
+  }
+
+  // === 最后降级：data.json（只读静态文件，不含用户数据）===
+  try {
+    const res = await fetch('data.json');
+    const candidate = await res.json();
+    if (isValidData(candidate)) {
+      DATA = candidate;
+      console.warn('[Data] 降级使用 data.json 静态文件');
+      showToast('⚠️ 所有缓存失效，使用初始数据，请检查网络', 8000);
+      init();
+      return;
+    }
+  } catch (e) {
+    console.error('[Data] data.json 加载失败:', e);
+  }
+
+  document.body.innerHTML = '<div style="padding:40px;color:#ff4d6d;text-align:center">⚠️ 数据加载失败，请检查网络后刷新页面</div>';
 }
 
-// ===== 保存数据（同时写云端 + 本地）=====
+// ===== 保存数据（先写本地双备份，再写云端，失败加入重试队列）=====
+const PENDING_SAVES_KEY = 'pendingSaves'; // 待重试的写操作队列
+
 async function saveData() {
-  localStorage.setItem('debtManagerData', JSON.stringify(DATA));
+  // 1. 先写本地两层（确保本地数据安全）
+  const snapshot = JSON.stringify(DATA);
+  localStorage.setItem('debtManagerData', snapshot);
+  await idbSave('debtManagerData', DATA);
+
+  // 2. 写云端
+  setSyncStatus('syncing');
   try {
-    setSyncStatus('syncing');
     await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID, {
       method: 'PATCH',
       prefer: 'return=minimal',
       body: JSON.stringify({ payload: DATA, updated_at: new Date().toISOString() })
     });
     setSyncStatus('ok');
+    // 写成功后清空重试队列里的 debt 条目
+    clearPendingSave('debt');
+    console.log('[Data] 云端保存成功');
   } catch (e) {
-    console.warn('云端保存失败:', e.message);
+    console.warn('[Data] 云端保存失败，加入重试队列:', e.message);
     setSyncStatus('error');
+    // 加入重试队列，网络恢复后自动重试
+    addPendingSave('debt', DATA);
+    showToast('⚠️ 网络异常，数据已保存本地，将在网络恢复后自动同步');
   }
 }
 
+// ===== 写失败重试队列 =====
+function addPendingSave(type, data) {
+  const queue = JSON.parse(localStorage.getItem(PENDING_SAVES_KEY) || '[]');
+  // 同类型只保留最新一条
+  const filtered = queue.filter(q => q.type !== type);
+  filtered.push({ type, data, ts: Date.now() });
+  localStorage.setItem(PENDING_SAVES_KEY, JSON.stringify(filtered));
+}
+
+function clearPendingSave(type) {
+  const queue = JSON.parse(localStorage.getItem(PENDING_SAVES_KEY) || '[]');
+  localStorage.setItem(PENDING_SAVES_KEY, JSON.stringify(queue.filter(q => q.type !== type)));
+}
+
+async function flushPendingSaves() {
+  const queue = JSON.parse(localStorage.getItem(PENDING_SAVES_KEY) || '[]');
+  if (queue.length === 0) return;
+  console.log('[Retry] 检测到', queue.length, '条待重试写操作');
+  const failed = [];
+  for (const item of queue) {
+    try {
+      if (item.type === 'debt') {
+        await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: JSON.stringify({ payload: item.data, updated_at: new Date().toISOString() })
+        });
+        console.log('[Retry] debt 重试成功');
+      } else if (item.type === 'expense') {
+        const rows = item.data.map(e => ({ ...e, month: e.date.slice(0, 7) }));
+        await sbFetch(EXPENSE_TABLE + '?on_conflict=id', {
+          method: 'POST',
+          prefer: 'resolution=merge-duplicates,return=minimal',
+          body: JSON.stringify(rows)
+        });
+        console.log('[Retry] expense 重试成功，共', rows.length, '条');
+      }
+    } catch (e) {
+      console.warn('[Retry] 重试失败，继续保留:', e.message);
+      failed.push(item);
+    }
+  }
+  localStorage.setItem(PENDING_SAVES_KEY, JSON.stringify(failed));
+  if (failed.length === 0) {
+    setSyncStatus('ok');
+    showToast('✅ 离线数据已同步到云端');
+  }
+}
+
+// 监听网络恢复，自动重试
+window.addEventListener('online', () => {
+  console.log('[Network] 网络已恢复，尝试重试待同步数据');
+  setTimeout(flushPendingSaves, 1000);
+});
+
 // ===== 初始化 =====
+function safeRender(name, fn) {
+  try { fn(); }
+  catch (e) { console.error('[Render] ' + name + ' 失败:', e); }
+}
+
 function init() {
-  renderSummaryBanner();
-  renderBankCards();
-  renderPieChart();
-  renderBarChart();
-  renderCalendar(calendarDate);
-  renderInstallments();
-  renderTimeline();
-  initWhatIf();
-  initExpenses();
-  renderWallets();
-  renderBillingStatus();
-  renderExpenseOverview();
-  schedulePaymentReminders();
-  document.getElementById('lastUpdated').textContent = '更新于 ' + DATA.meta.lastUpdated;
+  safeRender('SummaryBanner',      renderSummaryBanner);
+  safeRender('BankCards',          renderBankCards);
+  safeRender('PieChart',           renderPieChart);
+  safeRender('BarChart',           renderBarChart);
+  safeRender('Calendar',           () => renderCalendar(calendarDate));
+  safeRender('Installments',       renderInstallments);
+  safeRender('Timeline',           renderTimeline);
+  safeRender('WhatIf',             initWhatIf);
+  initExpenses().catch(e => console.error('[Render] Expenses 失败:', e));
+  safeRender('Wallets',            renderWallets);
+  safeRender('BillingStatus',      renderBillingStatus);
+  safeRender('ExpenseOverview',    renderExpenseOverview);
+  safeRender('PaymentReminders',   schedulePaymentReminders);
+  try {
+    document.getElementById('lastUpdated').textContent = '更新于 ' + DATA.meta.lastUpdated;
+  } catch (e) {}
+  // 启动时检查并重试待同步数据
+  setTimeout(flushPendingSaves, 2000);
 }
 
 // ===== 计算汇总数据 =====
@@ -232,17 +414,31 @@ function renderSummaryBanner() {
 }
 
 // ===== 钱包余额面板 =====
+const DEFAULT_WALLETS = [
+  { id: 'wallet-savings', name: '储蓄卡',    icon: '🏦', balance: 0 },
+  { id: 'wallet-wechat',  name: '微信钱包',  icon: '💚', balance: 0 },
+  { id: 'wallet-alipay',  name: '支付宝余额', icon: '💙', balance: 0 }
+];
+
+function getWallets() {
+  // 兜底：若云端数据没有 wallets 字段，补充默认值
+  if (!DATA.meta.wallets || DATA.meta.wallets.length === 0) {
+    DATA.meta.wallets = JSON.parse(JSON.stringify(DEFAULT_WALLETS));
+  }
+  return DATA.meta.wallets;
+}
+
 function renderWallets() {
   const panel = document.getElementById('walletPanel');
   const editPanel = document.getElementById('walletEditPanel');
   if (!panel || !DATA) return;
 
-  const wallets = DATA.meta.wallets || [];
+  const wallets = getWallets();
   const totalWallet = wallets.reduce((s, w) => s + (w.balance || 0), 0);
   const monthlyDue = calcSummary().monthlyDue;
   const canCover = totalWallet >= monthlyDue;
 
-  // 展示面板
+  // 展示面板：每个钱包单独一张卡片，显示名称+余额
   let html = `<div class="wallet-cards">`;
   wallets.forEach(w => {
     html += `
@@ -260,14 +456,14 @@ function renderWallets() {
   </div>`;
   panel.innerHTML = html;
 
-  // 编辑面板
+  // 编辑面板：每个钱包一行，带图标+名称标签+输入框
   let editHtml = `<div class="wallet-edit-form">`;
   wallets.forEach((w, i) => {
     editHtml += `
       <div class="wallet-edit-row">
         <label class="wallet-edit-label">${w.icon} ${w.name}</label>
-        <input class="wallet-edit-input" type="number" step="0.01" min="0"
-          data-wallet-idx="${i}" value="${w.balance}" placeholder="输入余额" />
+        <input class="wallet-edit-input" type="number" inputmode="decimal" step="0.01" min="0"
+          data-wallet-idx="${i}" value="${w.balance || 0}" placeholder="输入余额" />
       </div>`;
   });
   editHtml += `
@@ -284,8 +480,20 @@ function toggleWalletEdit() {
   const btn = document.getElementById('walletEditBtn');
   if (!ep) return;
   const isOpen = ep.style.display !== 'none';
-  ep.style.display = isOpen ? 'none' : 'block';
-  btn.textContent = isOpen ? '✏️ 更新余额' : '✕ 收起';
+  if (!isOpen) {
+    // 展开时重新渲染，确保输入框内容最新
+    renderWallets();
+    ep.style.display = 'block';
+    btn.textContent = '✕ 收起';
+    // 自动聚焦第一个输入框
+    setTimeout(() => {
+      const first = ep.querySelector('.wallet-edit-input');
+      if (first) first.focus();
+    }, 100);
+  } else {
+    ep.style.display = 'none';
+    btn.textContent = '✏️ 更新余额';
+  }
 }
 
 async function saveWallets() {
@@ -375,6 +583,10 @@ function renderBankCards() {
 
 // ===== 饼图 =====
 function renderPieChart() {
+  if (typeof Chart === 'undefined') {
+    console.warn('[Chart] Chart.js 未加载，跳过饼图渲染');
+    return;
+  }
   const labels = [];
   const values = [];
   const colors = [];
@@ -429,6 +641,10 @@ function renderPieChart() {
 
 // ===== 柱状图（未来12个月还款压力）=====
 function renderBarChart() {
+  if (typeof Chart === 'undefined') {
+    console.warn('[Chart] Chart.js 未加载，跳过柱状图渲染');
+    return;
+  }
   const months = [];
   const payments = [];
 
@@ -460,7 +676,7 @@ function renderBarChart() {
     payments.push(total);
   }
 
-  const income = DATA.meta.monthlyIncome;
+  const income = DATA.meta.monthlyIncome || DATA.meta.baseIncome || 10000;
   const ctx = document.getElementById('barChart').getContext('2d');
   if (barChart) barChart.destroy();
 
@@ -965,12 +1181,24 @@ async function initExpenses() {
 async function loadExpensesFromCloud() {
   try {
     const rows = await sbFetch(EXPENSE_TABLE + '?order=date.desc&limit=500');
-    if (rows && rows.length > 0) {
+    if (rows && Array.isArray(rows)) {
       const expenses = rows.map(r => ({ id: r.id, date: r.date, amount: r.amount, category: r.category, payment: r.payment, note: r.note }));
+      // 云端成功才覆盖本地，同时写 localStorage + IDB 双备份
       localStorage.setItem('expenses', JSON.stringify(expenses));
+      await idbSave('expenses', expenses);
+      console.log('[Expenses] 云端加载成功，共', expenses.length, '条');
+      // 网络恢复后顺便重试待同步数据
+      await flushPendingSaves();
     }
   } catch (e) {
-    console.warn('消费记录云端加载失败:', e.message);
+    // 网络失败：尝试从 IDB 恢复
+    console.warn('[Expenses] 云端加载失败，尝试 IDB 备份:', e.message);
+    const idbExpenses = await idbLoad('expenses');
+    if (idbExpenses && Array.isArray(idbExpenses) && idbExpenses.length > 0) {
+      localStorage.setItem('expenses', JSON.stringify(idbExpenses));
+      console.log('[Expenses] 从 IDB 恢复', idbExpenses.length, '条');
+    }
+    // 否则保留 localStorage 现有数据，不清空
   }
 }
 
@@ -979,25 +1207,27 @@ function getExpenses() {
 }
 
 async function saveExpenses(expenses) {
+  // 1. 先写本地两层
   localStorage.setItem('expenses', JSON.stringify(expenses));
-  // 同步到 Supabase（全量覆盖当月）
+  await idbSave('expenses', expenses);
+
+  // 2. upsert 到云端
   try {
-    // 先删除再插入，简单粗暴但可靠
-    const month = today.format('YYYY-MM');
-    await sbFetch(EXPENSE_TABLE + '?month=eq.' + month, {
-      method: 'DELETE',
-      prefer: 'return=minimal'
-    });
     if (expenses.length > 0) {
       const rows = expenses.map(e => ({ ...e, month: e.date.slice(0, 7) }));
-      await sbFetch(EXPENSE_TABLE, {
+      await sbFetch(EXPENSE_TABLE + '?on_conflict=id', {
         method: 'POST',
-        prefer: 'return=minimal',
+        prefer: 'resolution=merge-duplicates,return=minimal',
         body: JSON.stringify(rows)
       });
     }
+    clearPendingSave('expense');
+    console.log('[Expenses] 云端 upsert 成功，共', expenses.length, '条');
   } catch (e) {
-    console.warn('消费记录云端同步失败:', e.message);
+    console.warn('[Expenses] 云端同步失败，加入重试队列:', e.message);
+    setSyncStatus('error');
+    addPendingSave('expense', expenses);
+    showToast('⚠️ 网络异常，消费记录已保存本地，将在网络恢复后自动同步');
   }
 }
 
@@ -1291,6 +1521,7 @@ function renderExpenseStats() {
     ).join('')}`;
 
   // 消费饼图
+  if (typeof Chart === 'undefined') return;
   const ctx = document.getElementById('expensePieChart').getContext('2d');
   if (expensePieChart) expensePieChart.destroy();
 
@@ -1471,7 +1702,7 @@ document.getElementById('quickUpdateSave').addEventListener('click', async () =>
 });
 
 // ===== Toast 提示 =====
-function showToast(msg) {
+function showToast(msg, duration = 3000) {
   let toast = document.getElementById('globalToast');
   if (!toast) {
     toast = document.createElement('div');
@@ -1481,7 +1712,7 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.className = 'toast toast-show';
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.className = 'toast', 3000);
+  toast._timer = setTimeout(() => toast.className = 'toast', duration);
 }
 
 // ===== 本月消费概览 =====
@@ -1592,18 +1823,27 @@ function renderBillingStatus() {
     );
     const unpaidTotal = unpaidExpenses.reduce((s, e) => s + e.amount, 0);
 
-    // 下次还款日
-    const billing = getBillingCycle(cardId, now.format('YYYY-MM-DD'));
-    const dueDate = billing?.dueDate;
+    // 下次还款日：优先读 data.json 里的 currentDueDate（真实数据），避免推算错误
+    let dueDate = null;
+    if (accData.currentDueDate) {
+      dueDate = dayjs(accData.currentDueDate);
+    } else {
+      const billing = getBillingCycle(cardId, now.format('YYYY-MM-DD'));
+      dueDate = billing?.dueDate || null;
+    }
     const daysUntilDue = dueDate ? dueDate.diff(now, 'day') : null;
     const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
     const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+    // 账单日期范围
+    const billStart = accData.currentBillStart ? dayjs(accData.currentBillStart) : null;
+    const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
 
     cards.push({
       cardId, cfg, accData,
       unpaidTotal, unpaidExpenses: unpaidExpenses.length,
       dueDate, daysUntilDue, isUrgent, isOverdue,
       minPayment: accData.minPayment || 0,
+      billStart, billEnd,
     });
   });
 
@@ -1622,8 +1862,10 @@ function renderBillingStatus() {
       <div class="billing-card">
         <div class="billing-card-name">${c.cfg.name}</div>
         <div class="billing-card-row">
-          <span class="billing-label">已出账待还</span>
-          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${fmt(c.minPayment)}</span>
+          <span class="billing-label">已出账待还
+            ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
+          </span>
+          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.minPayment > 0 ? '¥' + c.minPayment.toFixed(2) : '暂无'}</span>
         </div>
         <div class="billing-card-row">
           <span class="billing-label">本期未出账</span>
@@ -2592,6 +2834,10 @@ function renderAnalysisTotals() {
 }
 
 function renderAnalysisCharts() {
+  if (typeof Chart === 'undefined') {
+    console.warn('[Chart] Chart.js 未加载，跳过分析图表渲染');
+    return;
+  }
   const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
   const byCategory = {};
   expenses.forEach(e => {

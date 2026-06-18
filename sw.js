@@ -1,12 +1,14 @@
 /* ============================================================
-   Service Worker - 个人负债管理中心
-   策略：
-     - app.js / style.css / index.html → Network First（优先网络，保证拿到最新代码）
+   Service Worker - 个人负债管理中心  v17
+   更新策略（解决 PWA 全屏模式下更新不生效问题）：
+     - 安装时立即 skipWaiting，激活时立即 clients.claim()
+     - 激活后主动通知所有客户端"有新版本，请刷新"
+     - app.js / style.css / index.html → Network First（永远优先网络）
      - CDN 资源 / 图标              → Cache First（离线可用）
      - Supabase API 请求            → 直接放行，不缓存
    ============================================================ */
 
-const CACHE_NAME = 'debt-manager-v11';  // 每次改这里，旧 SW 会被强制替换
+const CACHE_NAME = 'debt-manager-v17';
 
 // 只缓存不常变的静态资源（CDN + 图标）
 const STATIC_CACHE = [
@@ -17,7 +19,7 @@ const STATIC_CACHE = [
   './manifest.json'
 ];
 
-// ===== 安装：只预缓存静态资源 =====
+// ===== 安装：预缓存静态资源，立即激活 =====
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
@@ -28,18 +30,30 @@ self.addEventListener('install', (event) => {
       )
     )
   );
-  // 立即激活，不等旧 SW 的页面关闭
+  // 关键：立即跳过等待，不管旧页面是否还开着
   self.skipWaiting();
 });
 
-// ===== 激活：删除所有旧版本缓存 =====
+// ===== 激活：删除旧缓存，立即接管所有页面，然后通知刷新 =====
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      ))
+      .then(() => {
+        // 立即接管所有已打开的页面（不等页面重新导航）
+        return self.clients.claim();
+      })
+      .then(() => {
+        // 接管后主动通知所有客户端：新版本已就绪，请刷新
+        return self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME });
+          });
+        });
+      })
   );
-  self.clients.claim();
 });
 
 // ===== 拦截请求 =====
@@ -48,12 +62,11 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // 1. Supabase API / Friday AI API → 完全不拦截，直接走网络
+  // 1. Supabase API → 完全不拦截，直接走网络
   if (url.hostname.includes('supabase.co')) return;
   if (url.hostname.includes('aigc.sankuai.com')) return;
 
-  // 2. 本地 HTML / JS / CSS / JSON → Network First
-  //    优先从网络拿最新版本，网络失败才降级缓存
+  // 2. 本地 HTML / JS / CSS / JSON → Network First（永远优先网络）
   const isAppFile = url.origin === self.location.origin &&
     (url.pathname.endsWith('.html') ||
      url.pathname.endsWith('.js') ||
@@ -66,19 +79,18 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(res => {
-          // 网络成功：更新缓存并返回
           if (res && res.status === 200) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
           }
           return res;
         })
-        .catch(() => caches.match(event.request))  // 离线降级
+        .catch(() => caches.match(event.request))  // 离线降级到缓存
     );
     return;
   }
 
-  // 3. CDN / 图标 → Cache First（这些不会变）
+  // 3. CDN / 图标 → Cache First（这些版本固定，不会变）
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
