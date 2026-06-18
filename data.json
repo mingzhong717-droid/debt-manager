@@ -1,8 +1,9 @@
 {
   "meta": {
     "lastUpdated": "2026-06-18",
-    "monthlyIncome": 25000,
+    "baseIncome": 8000,
     "currency": "CNY",
+    "incomes": [],
     "wallets": [
       { "id": "wallet-savings", "name": "储蓄卡", "icon": "🏦", "balance": 0 },
       { "id": "wallet-wechat",  "name": "微信钱包", "icon": "💚", "balance": 0 },

@@ -196,12 +196,9 @@ function calcSummary() {
 // ===== 汇总横幅 =====
 function renderSummaryBanner() {
   const { totalDebt, monthlyDue, nextDue } = calcSummary();
-  const income = DATA.meta.monthlyIncome;
-  const ratio = monthlyDue / income;
 
   document.getElementById('totalDebt').textContent = fmt(totalDebt);
   document.getElementById('monthlyDue').textContent = fmt(monthlyDue);
-  document.getElementById('monthlyIncome').textContent = fmt(income);
 
   // 可用余额 = 所有钱包余额之和
   const wallets = DATA.meta.wallets || [];
@@ -212,9 +209,13 @@ function renderSummaryBanner() {
     walletEl.className = 'summary-value ' + (totalWallet >= monthlyDue ? 'success' : 'warning');
   }
 
-  const ratioEl = document.getElementById('debtRatio');
-  ratioEl.textContent = fmtPct(ratio);
-  ratioEl.className = 'summary-value ' + (ratio > 0.5 ? 'danger' : ratio > 0.35 ? 'warning' : 'info');
+  // 本月结余 = 可用余额 - 本月应还
+  const balance = totalWallet - monthlyDue;
+  const balanceEl = document.getElementById('monthlyBalance');
+  if (balanceEl) {
+    balanceEl.textContent = fmt(balance);
+    balanceEl.className = 'summary-value ' + (balance >= 0 ? 'success' : 'danger');
+  }
 
   if (nextDue) {
     const daysLeft = nextDue.diff(today, 'day');
@@ -350,13 +351,16 @@ function renderBankCards() {
         </div>`;
     });
 
+    // 取第一个账户 id 作为 What-if 默认目标
+    const firstAcc = bank.accounts[0];
     card.innerHTML = `
       <div class="bank-card-header">
         <span class="bank-icon">${bank.icon}</span>
         <span class="bank-name">${bank.name}</span>
         <span class="bank-total">${fmt(bankTotal)}</span>
       </div>
-      <div class="bank-accounts">${accountsHTML}</div>`;
+      <div class="bank-accounts">${accountsHTML}</div>
+      <button class="whatif-entry-btn" onclick="openWhatif('${bank.id}','${firstAcc?.id || ''}')">🔮 还款模拟</button>`;
 
     container.appendChild(card);
   });
@@ -840,19 +844,22 @@ function renderTimeline() {
 
 // ===== What-if 模拟 =====
 function initWhatIf() {
+  // 账户选择器由 openWhatif() 动态填充
+  // 只绑定计算按钮
+  const calcBtn = document.getElementById('whatifCalc');
+  if (calcBtn) calcBtn.addEventListener('click', calcWhatIf);
+
+  // 账户选择变化时更新标题
   const select = document.getElementById('whatifAccount');
-  select.innerHTML = '';
-
-  DATA.banks.forEach(bank => {
-    bank.accounts.forEach(acc => {
-      const opt = document.createElement('option');
-      opt.value = JSON.stringify({ bankId: bank.id, accId: acc.id });
-      opt.textContent = `${bank.shortName} · ${acc.name}`;
-      select.appendChild(opt);
-    });
+  if (select) select.addEventListener('change', () => {
+    try {
+      const { bankId, accId } = JSON.parse(select.value);
+      const bank = DATA.banks.find(b => b.id === bankId);
+      const acc = bank?.accounts.find(a => a.id === accId);
+      const labelEl = document.getElementById('whatifAccountLabel');
+      if (labelEl && acc) labelEl.textContent = `${bank.shortName} · ${acc.name}`;
+    } catch {}
   });
-
-  document.getElementById('whatifCalc').addEventListener('click', calcWhatIf);
 }
 
 function calcWhatIf() {
@@ -928,19 +935,24 @@ function simulatePayoff(balance, monthlyPayment, monthlyRate) {
 
 // ===== 消费记录 =====
 async function initExpenses() {
-  // 设置默认日期
-  document.getElementById('expDate').value = today.format('YYYY-MM-DD');
-  document.getElementById('expFilterMonth').value = today.format('YYYY-MM');
+  // 设置默认月份筛选
+  const filterEl = document.getElementById('expFilterMonth');
+  if (filterEl) filterEl.value = today.format('YYYY-MM');
 
-  document.getElementById('addExpense').addEventListener('click', addExpense);
-  document.getElementById('expFilterMonth').addEventListener('change', renderExpenseTable);
-  document.getElementById('clearExpenses').addEventListener('click', clearMonthExpenses);
+  const filterChange = document.getElementById('expFilterMonth');
+  if (filterChange) filterChange.addEventListener('change', () => {
+    renderExpenseTable();
+    renderAnalysisPage();
+  });
+
+  const clearBtn = document.getElementById('clearExpenses');
+  if (clearBtn) clearBtn.addEventListener('click', clearMonthExpenses);
 
   // 尝试从云端加载最新消费记录
   await loadExpensesFromCloud();
 
   renderExpenseTable();
-  renderExpenseStats();
+  renderAnalysisPage();
 }
 
 async function loadExpensesFromCloud() {
@@ -1663,7 +1675,7 @@ const AI_SYSTEM_PROMPT = `你是一个个人负债与消费管理助手，能识
 
 intent=add_expense:
 {"intent":"add_expense","date":"YYYY-MM-DD","amount":数字,"category":"分类","payment":"支付方式","note":"备注"}
-category 只能是：餐饮、交通、购物、娱乐、医疗、教育、居家、其他
+category 只能是：餐饮堂食、外卖、买菜生鲜、烟酒零食、交通出行、购物数码、购物服装、日用百货、娱乐休闲、订阅会员、医疗健康、教育学习、居家大件、转账还款、宠物、其他
 payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、花呗、美团月付、微信/支付宝、现金
 
 intent=add_loan:
@@ -1883,8 +1895,7 @@ async function handleAIIntent(parsed) {
   const intent = parsed.intent || 'add_expense';
 
   if (intent === 'add_expense') {
-    fillExpenseForm(parsed);
-    setAIStatus('✅ 已填写消费表单，确认后点"添加记录"；如有误可继续说明修正', 'success');
+    setAIStatus('✅ 已识别消费信息，点击"确认录入消费"按钮保存；如有误请继续说明', 'success');
 
   } else if (intent === 'add_loan') {
     setAIStatus('✅ 已识别贷款信息，点击下方"确认录入"按钮添加', 'success');
@@ -2002,6 +2013,7 @@ function renderAIChat() {
       const intent = p.intent || 'add_expense';
 
       if (intent === 'add_expense') {
+        const bubbleIdx = idx;
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
           <div class="ai-parsed-card">
@@ -2011,7 +2023,8 @@ function renderAIChat() {
             <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
             ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
           </div>
-          <div class="ai-bubble-hint">↑ 已填入消费表单，确认后点"添加记录"；如有误请继续说明</div>
+          <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed)">✅ 确认录入消费</button>
+          <div class="ai-bubble-hint">如有误请继续说明修正</div>
         </div>`;
 
       } else if (intent === 'add_loan') {
@@ -2075,12 +2088,42 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// AI 识别消费后直接录入（消费页已无手动表单）
+async function addExpenseFromAI(data) {
+  if (!data || !data.amount || data.amount <= 0) {
+    showToast('❌ 金额无效，请重新描述');
+    return;
+  }
+  const cardId = PAYMENT_TO_CARD[data.payment];
+  const billing = cardId ? getBillingCycle(cardId, data.date) : null;
+  const expense = {
+    id: Date.now(),
+    date: data.date,
+    amount: data.amount,
+    category: data.category || '其他',
+    payment: data.payment || '微信/支付宝',
+    note: data.note || '',
+    cardId: cardId || null,
+    billMonth: billing?.billMonth || null,
+    dueDate: billing?.dueDate?.format('YYYY-MM-DD') || null,
+    isCashAdvance: checkCashAdvance(data.amount, data.note, data.payment)
+  };
+  const expenses = getExpenses();
+  expenses.push(expense);
+  expenses.sort((a, b) => b.date.localeCompare(a.date));
+  await saveExpenses(expenses);
+  renderExpenseTable();
+  renderAnalysisPage();
+  renderBillingStatus();
+  renderExpenseOverview();
+  const billTip = billing ? `\n📋 计入 ${billing.billMonth} 账单，还款日 ${billing.dueDate.format('M月D日')}` : '';
+  showToast(`✅ 已录入 ${data.payment} 消费 ¥${data.amount}${billTip}`);
+}
+
+// 兼容旧调用（保留函数名）
 function fillExpenseForm(data) {
-  document.getElementById('expDate').value   = data.date;
-  document.getElementById('expAmount').value = data.amount;
-  document.getElementById('expNote').value   = data.note;
-  setSelectValue('expCategory', data.category);
-  setSelectValue('expPayment',  data.payment);
+  // 消费页已无表单，直接录入
+  addExpenseFromAI(data);
 }
 
 function setSelectValue(id, value) {
@@ -2098,6 +2141,235 @@ function setAIStatus(msg, type = '') {
   el.textContent = msg;
   el.className = 'ai-status' + (type ? ` ${type}` : '');
 }
+
+// ===== What-if 抽屉 =====
+function openWhatif(bankId, accId) {
+  // 初始化账户选择器
+  const select = document.getElementById('whatifAccount');
+  select.innerHTML = '';
+  DATA.banks.forEach(bank => {
+    bank.accounts.forEach(acc => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({ bankId: bank.id, accId: acc.id });
+      opt.textContent = `${bank.shortName} · ${acc.name}`;
+      if (bank.id === bankId && acc.id === accId) opt.selected = true;
+      select.appendChild(opt);
+    });
+  });
+  // 更新标题
+  const bank = DATA.banks.find(b => b.id === bankId);
+  const acc = bank?.accounts.find(a => a.id === accId);
+  document.getElementById('whatifAccountLabel').textContent =
+    acc ? `${bank.shortName} · ${acc.name}` : '选择账户';
+  // 重置结果
+  document.getElementById('whatifResult').innerHTML = '<div class="result-placeholder">👆 设置参数后点击计算</div>';
+  // 显示抽屉
+  document.getElementById('whatifOverlay').classList.add('open');
+  document.getElementById('whatifDrawer').classList.add('open');
+}
+
+function closeWhatif() {
+  document.getElementById('whatifOverlay').classList.remove('open');
+  document.getElementById('whatifDrawer').classList.remove('open');
+}
+
+// 银行卡片上的 What-if 入口按钮（在 renderBankCards 中调用）
+function addWhatifBtnToCards() {
+  document.querySelectorAll('.bank-card').forEach(card => {
+    // 已有按钮则跳过
+    if (card.querySelector('.whatif-entry-btn')) return;
+  });
+}
+
+// ===== 消费分析页 =====
+let analysisMonth = dayjs().format('YYYY-MM');
+
+const CATEGORY_COLORS = {
+  '餐饮堂食': '#ff6b6b', '外卖': '#ff9f43', '买菜生鲜': '#1dd1a1',
+  '烟酒零食': '#feca57', '交通出行': '#4dabf7', '购物数码': '#a29bfe',
+  '购物服装': '#fd79a8', '日用百货': '#74b9ff', '娱乐休闲': '#cc5de8',
+  '订阅会员': '#6c5ce7', '医疗健康': '#51cf66', '教育学习': '#74c0fc',
+  '居家大件': '#a9e34b', '转账还款': '#868e96', '宠物': '#f9ca24', '其他': '#636e72'
+};
+
+function renderAnalysisPage() {
+  renderAnalysisTotals();
+  renderAnalysisCharts();
+  renderAnalysisPaymentDist();
+  renderExpenseTable();
+}
+
+function renderAnalysisTotals() {
+  const el = document.getElementById('analysisTotals');
+  if (!el) return;
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth));
+  const total = expenses.reduce((s, e) => s + (e.amount > 0 ? e.amount : 0), 0);
+  const refund = expenses.reduce((s, e) => s + (e.amount < 0 ? Math.abs(e.amount) : 0), 0);
+  const net = total - refund;
+  const count = expenses.filter(e => e.amount > 0).length;
+  const dayNum = analysisMonth === dayjs().format('YYYY-MM') ? dayjs().date() : dayjs(analysisMonth + '-01').daysInMonth();
+  const daily = dayNum > 0 ? net / dayNum : 0;
+
+  el.innerHTML = `
+    <div class="analysis-total-card">
+      <div class="atc-label">本月总支出</div>
+      <div class="atc-value" style="color:var(--warning)">${fmt(net)}</div>
+      ${refund > 0 ? `<div class="atc-sub">退款 ${fmt(refund)}</div>` : ''}
+    </div>
+    <div class="analysis-total-card">
+      <div class="atc-label">消费笔数</div>
+      <div class="atc-value">${count} 笔</div>
+    </div>
+    <div class="analysis-total-card">
+      <div class="atc-label">日均支出</div>
+      <div class="atc-value" style="color:var(--info)">${fmt(daily)}</div>
+    </div>`;
+}
+
+function renderAnalysisCharts() {
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  const byCategory = {};
+  expenses.forEach(e => {
+    byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+  });
+
+  const sorted = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
+  const total = sorted.reduce((s, [, v]) => s + v, 0);
+
+  // 饼图
+  const pieEl = document.getElementById('analysisPieChart');
+  if (pieEl) {
+    const ctx = pieEl.getContext('2d');
+    if (window._analysisPieChart) window._analysisPieChart.destroy();
+    if (sorted.length > 0) {
+      window._analysisPieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: sorted.map(([k]) => k),
+          datasets: [{
+            data: sorted.map(([, v]) => v),
+            backgroundColor: sorted.map(([k]) => (CATEGORY_COLORS[k] || '#6c63ff') + 'cc'),
+            borderColor: sorted.map(([k]) => CATEGORY_COLORS[k] || '#6c63ff'),
+            borderWidth: 2, hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '60%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#8892b0', font: { size: 11 }, padding: 8, usePointStyle: true } },
+            tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${fmt(ctx.raw)} (${fmtPct(ctx.raw / total)})` } }
+          }
+        }
+      });
+    }
+  }
+
+  // 排行榜
+  const rankEl = document.getElementById('analysisCategoryRank');
+  if (!rankEl) return;
+  if (sorted.length === 0) {
+    rankEl.innerHTML = '<div class="empty-state">本月暂无消费记录</div>';
+    return;
+  }
+  const maxVal = sorted[0][1];
+  rankEl.innerHTML = sorted.map(([cat, amt]) => `
+    <div class="analysis-rank-row">
+      <div class="analysis-rank-label">
+        <span class="analysis-rank-dot" style="background:${CATEGORY_COLORS[cat] || '#6c63ff'}"></span>
+        <span>${cat}</span>
+      </div>
+      <div class="analysis-rank-bar-wrap">
+        <div class="analysis-rank-bar-fill" style="width:${(amt / maxVal * 100).toFixed(1)}%;background:${CATEGORY_COLORS[cat] || '#6c63ff'}"></div>
+      </div>
+      <div class="analysis-rank-amount">${fmt(amt)}</div>
+      <div class="analysis-rank-pct">${fmtPct(amt / total)}</div>
+    </div>`).join('');
+}
+
+function renderAnalysisPaymentDist() {
+  const el = document.getElementById('analysisPaymentDist');
+  if (!el) return;
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  const byPayment = {};
+  expenses.forEach(e => {
+    byPayment[e.payment] = (byPayment[e.payment] || 0) + e.amount;
+  });
+  const sorted = Object.entries(byPayment).sort((a, b) => b[1] - a[1]);
+  const total = sorted.reduce((s, [, v]) => s + v, 0);
+  if (sorted.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-muted);padding:12px">暂无数据</div>';
+    return;
+  }
+  el.innerHTML = `<div class="payment-dist-list">${sorted.map(([name, amt]) => `
+    <div class="payment-dist-row">
+      <span class="payment-dist-name">${name}</span>
+      <div class="payment-dist-bar-wrap">
+        <div class="payment-dist-bar-fill" style="width:${(amt / total * 100).toFixed(1)}%"></div>
+      </div>
+      <span class="payment-dist-amount">${fmt(amt)}</span>
+      <span class="payment-dist-pct">${fmtPct(amt / total)}</span>
+    </div>`).join('')}</div>`;
+}
+
+async function runAIAnalysis() {
+  const btn = document.getElementById('aiAnalysisBtn');
+  const resultEl = document.getElementById('aiAnalysisResult');
+  if (!btn || !resultEl) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 分析中...';
+  resultEl.innerHTML = '<div class="ai-analysis-loading">🤖 AI 正在分析本月消费数据...</div>';
+
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const byCategory = {};
+  expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+  const topCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([k, v]) => `${k}: ¥${v.toFixed(0)}`).join('、');
+
+  const prompt = `用户 ${analysisMonth} 月消费数据：总支出 ¥${total.toFixed(0)}，共 ${expenses.length} 笔。
+主要分类：${topCats || '暂无'}。
+请用 3-4 句话给出消费分析和节省建议，语气友好，重点突出。`;
+
+  try {
+    const data = await fridayRequest(MODEL_TEXT, [
+      { role: 'system', content: '你是一个个人财务顾问，给出简洁实用的消费分析建议。' },
+      { role: 'user', content: prompt }
+    ], 300);
+    const reply = data.choices?.[0]?.message?.content || '暂时无法生成分析';
+    resultEl.innerHTML = `<div class="ai-analysis-text">${escHtml(reply)}</div>`;
+  } catch (e) {
+    resultEl.innerHTML = `<div class="ai-analysis-error">❌ 分析失败：${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 生成分析';
+  }
+}
+
+// 分析页月份导航
+document.addEventListener('DOMContentLoaded', () => {
+  const labelEl = document.getElementById('analysisMonthLabel');
+  const prevBtn = document.getElementById('analysisPrevMonth');
+  const nextBtn = document.getElementById('analysisNextMonth');
+  const filterEl = document.getElementById('expFilterMonth');
+
+  function updateAnalysisMonth(m) {
+    analysisMonth = m;
+    if (labelEl) labelEl.textContent = dayjs(m + '-01').format('YYYY年M月');
+    if (filterEl) filterEl.value = m;
+    renderAnalysisPage();
+  }
+
+  if (labelEl) labelEl.textContent = dayjs(analysisMonth + '-01').format('YYYY年M月');
+
+  if (prevBtn) prevBtn.addEventListener('click', () => {
+    updateAnalysisMonth(dayjs(analysisMonth + '-01').subtract(1, 'month').format('YYYY-MM'));
+  });
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    const next = dayjs(analysisMonth + '-01').add(1, 'month').format('YYYY-MM');
+    if (next <= dayjs().format('YYYY-MM')) updateAnalysisMonth(next);
+  });
+});
 
 // ===== 启动 =====
 loadData();
