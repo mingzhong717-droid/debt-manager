@@ -12,11 +12,13 @@ const DEBT_TABLE = 'debt_data';
 // ===== 各信用卡账单周期配置 =====
 // billDay: 账单日, dueDay: 还款日, dueDayNextMonth: 还款日是否在下月
 const CARD_BILLING = {
-  'cmb-credit-1':  { name: '招商信用卡',   billDay: 21, dueDay: 21, dueDayNextMonth: false },
-  'gz-credit-1':   { name: '广州银行信用卡', billDay: 13, dueDay: 2,  dueDayNextMonth: true  },
-  'spd-credit-1':  { name: '浦发信用卡',   billDay: 29, dueDay: 17, dueDayNextMonth: true  },
-  'abc-credit-1':  { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
-  'cmbc-credit-1': { name: '民生银行信用卡', billDay: 19, dueDay: 9,  dueDayNextMonth: true  },
+  'cmb-credit-1':       { name: '招商信用卡',   billDay: 21, dueDay: 21, dueDayNextMonth: false },
+  'gz-credit-1':        { name: '广州银行信用卡', billDay: 13, dueDay: 2,  dueDayNextMonth: true  },
+  'spd-credit-1':       { name: '浦发信用卡',   billDay: 29, dueDay: 17, dueDayNextMonth: true  },
+  'abc-credit-1':       { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
+  'cmbc-credit-1':      { name: '民生银行信用卡', billDay: 19, dueDay: 9,  dueDayNextMonth: true  },
+  'alipay-huabei-1':    { name: '花呗',         billDay: 1,  dueDay: 8,  dueDayNextMonth: false },
+  'meituan-yuepay-1':   { name: '美团月付',      billDay: 24, dueDay: 3,  dueDayNextMonth: true  },
 };
 
 // 支付方式名称 → 账户ID 映射（用于消费联动）
@@ -26,6 +28,8 @@ const PAYMENT_TO_CARD = {
   '浦发信用卡':    'spd-credit-1',
   '农行信用卡':    'abc-credit-1',
   '民生信用卡':    'cmbc-credit-1',
+  '花呗':         'alipay-huabei-1',
+  '美团月付':      'meituan-yuepay-1',
 };
 
 // ===== 全局状态 =====
@@ -147,6 +151,7 @@ function init() {
   renderTimeline();
   initWhatIf();
   initExpenses();
+  renderWallets();
   renderBillingStatus();
   renderExpenseOverview();
   schedulePaymentReminders();
@@ -198,6 +203,15 @@ function renderSummaryBanner() {
   document.getElementById('monthlyDue').textContent = fmt(monthlyDue);
   document.getElementById('monthlyIncome').textContent = fmt(income);
 
+  // 可用余额 = 所有钱包余额之和
+  const wallets = DATA.meta.wallets || [];
+  const totalWallet = wallets.reduce((s, w) => s + (w.balance || 0), 0);
+  const walletEl = document.getElementById('totalWalletBalance');
+  if (walletEl) {
+    walletEl.textContent = fmt(totalWallet);
+    walletEl.className = 'summary-value ' + (totalWallet >= monthlyDue ? 'success' : 'warning');
+  }
+
   const ratioEl = document.getElementById('debtRatio');
   ratioEl.textContent = fmtPct(ratio);
   ratioEl.className = 'summary-value ' + (ratio > 0.5 ? 'danger' : ratio > 0.35 ? 'warning' : 'info');
@@ -207,6 +221,77 @@ function renderSummaryBanner() {
     document.getElementById('nextDueDate').textContent =
       nextDue.format('MM月DD日') + (daysLeft <= 3 ? ` (${daysLeft}天后)` : '');
   }
+}
+
+// ===== 钱包余额面板 =====
+function renderWallets() {
+  const panel = document.getElementById('walletPanel');
+  const editPanel = document.getElementById('walletEditPanel');
+  if (!panel || !DATA) return;
+
+  const wallets = DATA.meta.wallets || [];
+  const totalWallet = wallets.reduce((s, w) => s + (w.balance || 0), 0);
+  const monthlyDue = calcSummary().monthlyDue;
+  const canCover = totalWallet >= monthlyDue;
+
+  // 展示面板
+  let html = `<div class="wallet-cards">`;
+  wallets.forEach(w => {
+    html += `
+      <div class="wallet-card">
+        <div class="wallet-card-icon">${w.icon}</div>
+        <div class="wallet-card-name">${w.name}</div>
+        <div class="wallet-card-balance">${fmt(w.balance)}</div>
+      </div>`;
+  });
+  html += `</div>`;
+  html += `<div class="wallet-cover-tip ${canCover ? 'ok' : 'warn'}">
+    ${canCover
+      ? `✅ 余额合计 ${fmt(totalWallet)}，可覆盖本月应还 ${fmt(monthlyDue)}`
+      : `⚠️ 余额合计 ${fmt(totalWallet)}，距本月应还 ${fmt(monthlyDue)} 还差 ${fmt(monthlyDue - totalWallet)}`}
+  </div>`;
+  panel.innerHTML = html;
+
+  // 编辑面板
+  let editHtml = `<div class="wallet-edit-form">`;
+  wallets.forEach((w, i) => {
+    editHtml += `
+      <div class="wallet-edit-row">
+        <label class="wallet-edit-label">${w.icon} ${w.name}</label>
+        <input class="wallet-edit-input" type="number" step="0.01" min="0"
+          data-wallet-idx="${i}" value="${w.balance}" placeholder="输入余额" />
+      </div>`;
+  });
+  editHtml += `
+    <div class="wallet-edit-actions">
+      <button class="btn-save" onclick="saveWallets()">💾 保存</button>
+      <button class="btn-cancel" onclick="toggleWalletEdit()">取消</button>
+    </div>
+  </div>`;
+  editPanel.innerHTML = editHtml;
+}
+
+function toggleWalletEdit() {
+  const ep = document.getElementById('walletEditPanel');
+  const btn = document.getElementById('walletEditBtn');
+  if (!ep) return;
+  const isOpen = ep.style.display !== 'none';
+  ep.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '✏️ 更新余额' : '✕ 收起';
+}
+
+async function saveWallets() {
+  const inputs = document.querySelectorAll('[data-wallet-idx]');
+  inputs.forEach(inp => {
+    const idx = parseInt(inp.dataset.walletIdx);
+    DATA.meta.wallets[idx].balance = parseFloat(inp.value) || 0;
+  });
+  DATA.meta.lastUpdated = today.format('YYYY-MM-DD');
+  await saveData();
+  renderWallets();
+  renderSummaryBanner();
+  toggleWalletEdit();
+  showToast('钱包余额已更新');
 }
 
 // ===== 银行卡片 =====
@@ -1562,19 +1647,44 @@ const FRIDAY_TOKEN = '22041715054660149263';
 const MODEL_TEXT   = 'deepseek-v4-flash';  // 主线对话（纯文字，保持上下文）
 const MODEL_VL     = 'LongCat-VL-Medium';  // 图片识别（单次调用，结果合并回主线）
 
-const AI_SYSTEM_PROMPT = `你是一个消费记录解析助手。用户会发给你消费信息（文字描述或账单截图的文字提取结果），请从中提取以下字段并以 JSON 格式返回：
-{
-  "date": "YYYY-MM-DD",
-  "amount": 数字,
-  "category": "分类",
-  "payment": "支付方式",
-  "note": "备注"
-}
-category 只能是：餐饮、交通、购物、娱乐、医疗、教育、居家、其他。
-payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、微信/支付宝、现金。
-date 无法确定则用今天（${dayjs().format('YYYY-MM-DD')}）。
-用户如果说"不对""改一下""支付方式改成XX"等修正指令，请基于上一次结果修改后重新返回完整 JSON。
-只返回 JSON，不要 markdown 代码块，不要解释。`;
+const AI_SYSTEM_PROMPT = `你是一个个人负债与消费管理助手，能识别用户意图并返回结构化 JSON。
+
+今天日期：${dayjs().format('YYYY-MM-DD')}
+
+支持的意图（intent）：
+1. add_expense    - 录入消费记录（用户描述消费、上传账单截图）
+2. add_loan       - 新建贷款账户（用户说"新增贷款""借了XX钱"）
+3. add_installment - 新建分期（用户说"分期""办了XX期"）
+4. update_wallet  - 更新钱包余额（用户说"微信还有XX""支付宝余额XX"）
+5. query          - 查询/分析（用户问"我还有多少债""下次还款是哪天"等）
+6. chat           - 闲聊/无法识别（友好回复，reply 字段填回复内容）
+
+根据用户输入判断 intent，返回对应 JSON 格式：
+
+intent=add_expense:
+{"intent":"add_expense","date":"YYYY-MM-DD","amount":数字,"category":"分类","payment":"支付方式","note":"备注"}
+category 只能是：餐饮、交通、购物、娱乐、医疗、教育、居家、其他
+payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、花呗、美团月付、微信/支付宝、现金
+
+intent=add_loan:
+{"intent":"add_loan","bankName":"银行名","accountName":"账户名","totalDebt":数字,"monthlyPayment":数字,"interestRate":年利率小数,"remainingMonths":数字,"endDate":"YYYY-MM-DD","note":"备注"}
+
+intent=add_installment:
+{"intent":"add_installment","cardName":"信用卡名","instName":"分期名称","originalAmount":数字,"remainingAmount":数字,"monthlyPayment":数字,"remainingMonths":数字,"startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","note":"备注"}
+
+intent=update_wallet:
+{"intent":"update_wallet","wallets":[{"name":"储蓄卡|微信钱包|支付宝余额","balance":数字}]}
+
+intent=query:
+{"intent":"query","reply":"用中文回答用户的问题，可引用数据"}
+
+intent=chat:
+{"intent":"chat","reply":"友好的中文回复"}
+
+规则：
+- 用户修正上一次结果时（说"不对""改成XX"），基于上次 JSON 修改后重新返回完整 JSON
+- 只返回 JSON，不要 markdown 代码块，不要任何解释文字
+- 无法确定的字段用合理默认值，不要留 null`;
 
 // 主线对话历史（deepseek 保持上下文）
 let aiConversation = [];  // [{role, content}]
@@ -1674,9 +1784,8 @@ async function handleAISend() {
     aiChatBubbles.push({ role: 'ai', text: raw, parsed });
     renderAIChat();
 
-    // 自动填表
-    fillExpenseForm(parsed);
-    setAIStatus('✅ 已填写表单，确认后点"添加记录"；如有误可继续说明修正', 'success');
+    // 根据意图执行操作
+    await handleAIIntent(parsed);
 
   } catch (err) {
     console.error('[AI]', err);
@@ -1746,13 +1855,131 @@ function parseAIResult(raw) {
     obj = JSON.parse(m[0]);
   }
   const todayStr = dayjs().format('YYYY-MM-DD');
-  return {
-    date:     obj.date     || todayStr,
-    amount:   parseFloat(obj.amount) || 0,
-    category: obj.category || '其他',
-    payment:  obj.payment  || '微信/支付宝',
-    note:     obj.note     || '',
+  // 兼容旧格式（无 intent 字段时默认为 add_expense）
+  if (!obj.intent) {
+    return {
+      intent: 'add_expense',
+      date:     obj.date     || todayStr,
+      amount:   parseFloat(obj.amount) || 0,
+      category: obj.category || '其他',
+      payment:  obj.payment  || '微信/支付宝',
+      note:     obj.note     || '',
+    };
+  }
+  // 补全 add_expense 的默认值
+  if (obj.intent === 'add_expense') {
+    obj.date     = obj.date     || todayStr;
+    obj.amount   = parseFloat(obj.amount) || 0;
+    obj.category = obj.category || '其他';
+    obj.payment  = obj.payment  || '微信/支付宝';
+    obj.note     = obj.note     || '';
+  }
+  return obj;
+}
+
+// 根据 AI 识别的意图执行对应操作
+async function handleAIIntent(parsed) {
+  if (!parsed) return;
+  const intent = parsed.intent || 'add_expense';
+
+  if (intent === 'add_expense') {
+    fillExpenseForm(parsed);
+    setAIStatus('✅ 已填写消费表单，确认后点"添加记录"；如有误可继续说明修正', 'success');
+
+  } else if (intent === 'add_loan') {
+    setAIStatus('✅ 已识别贷款信息，点击下方"确认录入"按钮添加', 'success');
+    // 气泡里有确认按钮，点击后执行录入（见 renderAIChat）
+
+  } else if (intent === 'add_installment') {
+    setAIStatus('✅ 已识别分期信息，点击下方"确认录入"按钮添加', 'success');
+
+  } else if (intent === 'update_wallet') {
+    // 直接更新钱包余额
+    if (parsed.wallets && DATA?.meta?.wallets) {
+      parsed.wallets.forEach(w => {
+        const target = DATA.meta.wallets.find(dw =>
+          dw.name === w.name || dw.name.includes(w.name) || w.name.includes(dw.name)
+        );
+        if (target) target.balance = w.balance;
+      });
+      DATA.meta.lastUpdated = today.format('YYYY-MM-DD');
+      await saveData();
+      renderWallets();
+      renderSummaryBanner();
+      setAIStatus('✅ 钱包余额已更新', 'success');
+    }
+
+  } else if (intent === 'query' || intent === 'chat') {
+    setAIStatus('', '');
+    // 回复内容已在气泡里渲染
+
+  } else {
+    setAIStatus('', '');
+  }
+}
+
+// 从 AI 识别结果录入贷款
+async function aiConfirmLoan(parsed) {
+  if (!DATA || !parsed) return;
+  // 找或创建对应 bank
+  let bank = DATA.banks.find(b => b.name.includes(parsed.bankName) || parsed.bankName.includes(b.name));
+  if (!bank) {
+    bank = {
+      id: 'bank-' + Date.now(),
+      name: parsed.bankName, shortName: parsed.bankName.slice(0, 2),
+      color: '#8892b0', icon: '🏦', accounts: []
+    };
+    DATA.banks.push(bank);
+  }
+  const newAcc = {
+    id: 'loan-' + Date.now(),
+    type: 'loan',
+    name: parsed.accountName || '新贷款',
+    totalDebt: parsed.totalDebt || 0,
+    monthlyPayment: parsed.monthlyPayment || 0,
+    interestRate: parsed.interestRate || 0,
+    remainingMonths: parsed.remainingMonths || 0,
+    dueDay: 1,
+    startDate: today.format('YYYY-MM-DD'),
+    endDate: parsed.endDate || today.add(parsed.remainingMonths || 12, 'month').format('YYYY-MM-DD'),
+    note: parsed.note || ''
   };
+  bank.accounts.push(newAcc);
+  DATA.meta.lastUpdated = today.format('YYYY-MM-DD');
+  await saveData();
+  renderSummaryBanner();
+  renderBankCards();
+  showToast(`✅ 贷款"${newAcc.name}"已录入`);
+}
+
+// 从 AI 识别结果录入分期
+async function aiConfirmInstallment(parsed) {
+  if (!DATA || !parsed) return;
+  // 找对应信用卡账户
+  let targetAcc = null;
+  DATA.banks.forEach(b => b.accounts.forEach(a => {
+    if (a.type === 'credit' && (a.name.includes(parsed.cardName) || parsed.cardName.includes(a.name))) {
+      targetAcc = a;
+    }
+  }));
+  if (!targetAcc) { showToast('❌ 未找到对应信用卡，请检查卡名'); return; }
+  if (!targetAcc.installments) targetAcc.installments = [];
+  targetAcc.installments.push({
+    id: 'inst-' + Date.now(),
+    name: parsed.instName || '新分期',
+    originalAmount: parsed.originalAmount || 0,
+    remainingAmount: parsed.remainingAmount || parsed.originalAmount || 0,
+    monthlyPayment: parsed.monthlyPayment || 0,
+    remainingMonths: parsed.remainingMonths || 0,
+    startDate: parsed.startDate || today.format('YYYY-MM-DD'),
+    endDate: parsed.endDate || today.add(parsed.remainingMonths || 12, 'month').format('YYYY-MM-DD'),
+    note: parsed.note || ''
+  });
+  DATA.meta.lastUpdated = today.format('YYYY-MM-DD');
+  await saveData();
+  renderInstallments();
+  renderTimeline();
+  showToast(`✅ 分期"${parsed.instName}"已录入到${targetAcc.name}`);
 }
 
 // ---- 渲染对话气泡 ----
@@ -1760,7 +1987,7 @@ function renderAIChat() {
   const el = document.getElementById('aiChatHistory');
   if (aiChatBubbles.length === 0) { el.innerHTML = ''; return; }
 
-  el.innerHTML = aiChatBubbles.map(b => {
+  el.innerHTML = aiChatBubbles.map((b, idx) => {
     if (b.role === 'user') {
       const imgHtml = b.imgSrc
         ? `<img src="${b.imgSrc}" class="ai-bubble-img" alt="图片" />`  : '';
@@ -1768,18 +1995,72 @@ function renderAIChat() {
         ? `<span>${escHtml(b.text)}</span>` : '';
       return `<div class="ai-bubble ai-bubble-user">${imgHtml}${txt}</div>`;
     } else {
-      // AI 回复：如果能解析出 JSON 就显示结构化卡片，否则显示原文
-      if (b.parsed) {
+      if (!b.parsed) {
+        return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span></div>`;
+      }
+      const p = b.parsed;
+      const intent = p.intent || 'add_expense';
+
+      if (intent === 'add_expense') {
         return `<div class="ai-bubble ai-bubble-ai">
+          <div class="ai-intent-tag">🛒 录入消费</div>
           <div class="ai-parsed-card">
-            <div class="ai-parsed-row"><span>📅 日期</span><strong>${b.parsed.date}</strong></div>
-            <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${b.parsed.amount}</strong></div>
-            <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${b.parsed.category}</strong></div>
-            <div class="ai-parsed-row"><span>💳 支付</span><strong>${b.parsed.payment}</strong></div>
-            ${b.parsed.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(b.parsed.note)}</strong></div>` : ''}
+            <div class="ai-parsed-row"><span>📅 日期</span><strong>${p.date}</strong></div>
+            <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
+            <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${p.category}</strong></div>
+            <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
+            ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
           </div>
-          <div class="ai-bubble-hint">↑ 已填入表单，如有误请继续说明</div>
+          <div class="ai-bubble-hint">↑ 已填入消费表单，确认后点"添加记录"；如有误请继续说明</div>
         </div>`;
+
+      } else if (intent === 'add_loan') {
+        const bubbleIdx = idx;
+        return `<div class="ai-bubble ai-bubble-ai">
+          <div class="ai-intent-tag">🏦 新建贷款</div>
+          <div class="ai-parsed-card">
+            <div class="ai-parsed-row"><span>🏦 银行</span><strong>${escHtml(p.bankName || '')}</strong></div>
+            <div class="ai-parsed-row"><span>📋 账户名</span><strong>${escHtml(p.accountName || '')}</strong></div>
+            <div class="ai-parsed-row"><span>💰 贷款金额</span><strong style="color:var(--danger)">¥${p.totalDebt}</strong></div>
+            <div class="ai-parsed-row"><span>📆 月供</span><strong>¥${p.monthlyPayment}</strong></div>
+            <div class="ai-parsed-row"><span>📅 剩余期数</span><strong>${p.remainingMonths} 期</strong></div>
+            <div class="ai-parsed-row"><span>📅 结束日期</span><strong>${p.endDate || '-'}</strong></div>
+            ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+          </div>
+          <button class="ai-confirm-btn" onclick="aiConfirmLoan(aiChatBubbles[${bubbleIdx}].parsed)">✅ 确认录入贷款</button>
+        </div>`;
+
+      } else if (intent === 'add_installment') {
+        const bubbleIdx = idx;
+        return `<div class="ai-bubble ai-bubble-ai">
+          <div class="ai-intent-tag">💳 新建分期</div>
+          <div class="ai-parsed-card">
+            <div class="ai-parsed-row"><span>💳 信用卡</span><strong>${escHtml(p.cardName || '')}</strong></div>
+            <div class="ai-parsed-row"><span>📋 分期名</span><strong>${escHtml(p.instName || '')}</strong></div>
+            <div class="ai-parsed-row"><span>💰 原始金额</span><strong style="color:var(--danger)">¥${p.originalAmount}</strong></div>
+            <div class="ai-parsed-row"><span>📆 月供</span><strong>¥${p.monthlyPayment}</strong></div>
+            <div class="ai-parsed-row"><span>📅 剩余期数</span><strong>${p.remainingMonths} 期</strong></div>
+            <div class="ai-parsed-row"><span>📅 结束日期</span><strong>${p.endDate || '-'}</strong></div>
+            ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+          </div>
+          <button class="ai-confirm-btn" onclick="aiConfirmInstallment(aiChatBubbles[${bubbleIdx}].parsed)">✅ 确认录入分期</button>
+        </div>`;
+
+      } else if (intent === 'update_wallet') {
+        const rows = (p.wallets || []).map(w =>
+          `<div class="ai-parsed-row"><span>${w.name}</span><strong style="color:var(--success,#00d4aa)">¥${w.balance}</strong></div>`
+        ).join('');
+        return `<div class="ai-bubble ai-bubble-ai">
+          <div class="ai-intent-tag">💰 更新余额</div>
+          <div class="ai-parsed-card">${rows}</div>
+          <div class="ai-bubble-hint">✅ 已自动更新钱包余额</div>
+        </div>`;
+
+      } else if (intent === 'query' || intent === 'chat') {
+        return `<div class="ai-bubble ai-bubble-ai">
+          <span>${escHtml(p.reply || b.text)}</span>
+        </div>`;
+
       } else {
         return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span></div>`;
       }

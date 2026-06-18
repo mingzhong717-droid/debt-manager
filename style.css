@@ -151,6 +151,7 @@ body {
 .summary-value.danger { color: var(--danger); }
 .summary-value.warning { color: var(--warning); }
 .summary-value.info { color: var(--info); }
+.summary-value.success { color: var(--success, #00d4aa); }
 
 .summary-divider {
   width: 1px;
@@ -1248,6 +1249,16 @@ input:focus, select:focus, textarea:focus {
   object-fit: cover;
 }
 /* AI 解析结果卡片 */
+.ai-intent-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0,212,170,0.12);
+  color: var(--accent);
+  margin-bottom: 6px;
+}
 .ai-parsed-card {
   display: flex;
   flex-direction: column;
@@ -1269,6 +1280,20 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--border);
   padding-top: 5px;
 }
+.ai-confirm-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ai-confirm-btn:hover { opacity: 0.85; }
 .ai-input-row {
   display: flex;
   gap: 8px;
@@ -1406,3 +1431,100 @@ input:focus, select:focus, textarea:focus {
 /* 退款行（负金额）样式 */
 tr.refund-row td { opacity: 0.75; }
 tr.refund-row td:nth-child(3) { color: var(--success) !important; }
+
+/* ===== 钱包余额面板 ===== */
+.wallet-edit-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.wallet-edit-btn:hover { background: var(--accent); color: #000; }
+
+.wallet-panel { margin-bottom: 8px; }
+
+.wallet-cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.wallet-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  min-width: 110px;
+  text-align: center;
+  transition: var(--transition);
+}
+.wallet-card:hover { border-color: var(--accent); }
+.wallet-card-icon { font-size: 1.4rem; margin-bottom: 4px; }
+.wallet-card-name { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; }
+.wallet-card-balance { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+
+.wallet-cover-tip {
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.wallet-cover-tip.ok   { background: rgba(0,212,170,0.1); color: var(--success, #00d4aa); }
+.wallet-cover-tip.warn { background: rgba(255,167,77,0.1); color: var(--warning); }
+
+.wallet-edit-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.wallet-edit-form { display: flex; flex-direction: column; gap: 10px; }
+.wallet-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wallet-edit-label {
+  width: 100px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.wallet-edit-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.wallet-edit-input:focus { outline: none; border-color: var(--accent); }
+.wallet-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.wallet-edit-actions .btn-save {
+  flex: 1;
+  padding: 10px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wallet-edit-actions .btn-cancel {
+  padding: 10px 16px;
+  background: var(--bg3);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}

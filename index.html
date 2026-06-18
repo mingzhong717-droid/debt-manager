@@ -81,6 +81,11 @@
       </div>
       <div class="summary-divider"></div>
       <div class="summary-item">
+        <div class="summary-label">可用余额</div>
+        <div class="summary-value success" id="totalWalletBalance">--</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
         <div class="summary-label">月收入</div>
         <div class="summary-value" id="monthlyIncome">--</div>
       </div>
@@ -95,6 +100,14 @@
         <div class="summary-value info" id="nextDueDate">--</div>
       </div>
     </div>
+
+    <!-- 钱包余额面板 -->
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>钱包余额</span>
+      <button class="wallet-edit-btn" id="walletEditBtn" onclick="toggleWalletEdit()">✏️ 更新余额</button>
+    </div>
+    <div class="wallet-panel" id="walletPanel"></div>
+    <div class="wallet-edit-panel" id="walletEditPanel" style="display:none"></div>
 
     <!-- 本月消费概览 -->
     <div class="section-title">本月消费概览</div>

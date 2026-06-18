@@ -2,7 +2,12 @@
   "meta": {
     "lastUpdated": "2026-06-18",
     "monthlyIncome": 25000,
-    "currency": "CNY"
+    "currency": "CNY",
+    "wallets": [
+      { "id": "wallet-savings", "name": "储蓄卡", "icon": "🏦", "balance": 0 },
+      { "id": "wallet-wechat",  "name": "微信钱包", "icon": "💚", "balance": 0 },
+      { "id": "wallet-alipay",  "name": "支付宝余额", "icon": "💙", "balance": 0 }
+    ]
   },
   "banks": [
     {
@@ -264,6 +269,60 @@
               "note": "12期，总利息2,158.48元，月利率约0.45%，剩余本金16,654.96+利息899.39，✅ 最快结清"
             }
           ]
+        }
+      ]
+    }
+    ,
+    {
+      "id": "alipay",
+      "name": "支付宝",
+      "shortName": "支付宝",
+      "color": "#1677FF",
+      "icon": "💙",
+      "accounts": [
+        {
+          "id": "alipay-huabei-1",
+          "type": "credit",
+          "name": "花呗",
+          "totalDebt": 0,
+          "creditLimit": 10000,
+          "billDay": 1,
+          "dueDay": 8,
+          "dueDayNextMonth": false,
+          "minPayment": 0,
+          "interestRate": 0.0005,
+          "note": "当前：1日出账，8日还款。可选15/20/25日还款（对应5/10/15日出账）。建议调整为20日还款（10日出账），与其他还款日错开最均匀。暂未使用，余额0。",
+          "installments": []
+        },
+        {
+          "id": "alipay-savings-1",
+          "type": "savings",
+          "name": "支付宝余额/余额宝",
+          "balance": 0,
+          "note": "支付宝钱包余额，手动更新"
+        }
+      ]
+    },
+    {
+      "id": "meituan",
+      "name": "美团",
+      "shortName": "美团",
+      "color": "#FFD100",
+      "icon": "🛵",
+      "accounts": [
+        {
+          "id": "meituan-yuepay-1",
+          "type": "credit",
+          "name": "美团月付",
+          "totalDebt": 0,
+          "creditLimit": 5000,
+          "billDay": 24,
+          "dueDay": 3,
+          "dueDayNextMonth": true,
+          "minPayment": 0,
+          "interestRate": 0,
+          "note": "当前：25日出账，次月3日还款。可选15/20/25日还款（对应5/10/15日出账）。建议调整为25日还款（15日出账），月底还款压力最小且与花呗20日错开。暂未使用，余额0。",
+          "installments": []
         }
       ]
     }
