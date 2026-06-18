@@ -108,6 +108,8 @@ body {
   flex-shrink: 0;
 }
 .edit-data-btn:hover { color: var(--text); border-color: var(--accent); }
+.edit-data-btn-secondary { opacity: 0.6; font-size: 0.75rem; padding: 6px 10px; }
+.edit-data-btn-secondary:hover { opacity: 1; }
 
 /* ===== 主内容 ===== */
 .main-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
@@ -804,6 +806,76 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--border);
 }
 .modal-footer .btn-primary { width: auto; }
+
+/* ===== 快速更新余额弹窗 ===== */
+.modal-wide { max-width: 640px; max-height: 80vh; }
+
+.qu-bank-group {
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.qu-bank-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+.qu-row {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.qu-row:last-child { border-bottom: none; }
+.qu-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.qu-type {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 400;
+}
+.qu-inputs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.qu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+.qu-field-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.qu-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: var(--transition);
+}
+.qu-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg3);
+}
 
 /* ===== 空状态 ===== */
 .empty-state {

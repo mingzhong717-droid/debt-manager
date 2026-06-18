@@ -34,7 +34,8 @@
     <button class="nav-btn" data-page="whatif">What-if</button>
     <button class="nav-btn" data-page="expenses">消费记录</button>
   </nav>
-  <button class="edit-data-btn" id="editDataBtn">✏️ 编辑数据</button>
+  <button class="edit-data-btn" id="quickUpdateBtn">📝 更新余额</button>
+  <button class="edit-data-btn edit-data-btn-secondary" id="editDataBtn">⚙️ 高级</button>
 </header>
 
 <!-- ===== 底部导航（移动端） ===== -->
@@ -236,6 +237,24 @@
   </section>
 
 </main>
+
+<!-- ===== 快速更新余额弹窗 ===== -->
+<div class="modal-overlay" id="quickUpdateOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>📝 快速更新余额</span>
+      <button class="modal-close" id="quickUpdateClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-tip">直接修改各账户当前余额，保存后自动同步到云端。</p>
+      <div id="quickUpdateFields"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="quickUpdateCancel">取消</button>
+      <button class="btn-primary" id="quickUpdateSave">☁️ 保存并同步</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== 编辑数据弹窗 ===== -->
 <div class="modal-overlay" id="modalOverlay">

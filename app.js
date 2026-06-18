@@ -31,6 +31,7 @@ async function sbFetch(path, options = {}) {
       'Authorization': 'Bearer ' + SUPABASE_KEY,
       'Content-Type': 'application/json',
       'Prefer': options.prefer || 'return=representation',
+      'Cache-Control': 'no-cache',
       ...(options.headers || {})
     }
   });
@@ -995,6 +996,98 @@ document.getElementById('modalSave').addEventListener('click', () => {
     alert('✅ 数据已保存并刷新');
   } catch (e) {
     alert('❌ JSON 格式错误：' + e.message);
+  }
+});
+
+// ===== 快速更新余额弹窗 =====
+document.getElementById('quickUpdateBtn').addEventListener('click', openQuickUpdate);
+document.getElementById('quickUpdateClose').addEventListener('click', closeQuickUpdate);
+document.getElementById('quickUpdateCancel').addEventListener('click', closeQuickUpdate);
+document.getElementById('quickUpdateOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('quickUpdateOverlay')) closeQuickUpdate();
+});
+
+function openQuickUpdate() {
+  if (!DATA) return;
+  const container = document.getElementById('quickUpdateFields');
+  let html = '';
+
+  DATA.banks.forEach((bank, bi) => {
+    html += `<div class="qu-bank-group">
+      <div class="qu-bank-title" style="color:${bank.color}">${bank.icon} ${bank.name}</div>`;
+    bank.accounts.forEach((acc, ai) => {
+      const isCredit = acc.type === 'credit';
+      html += `
+      <div class="qu-row">
+        <label class="qu-label">${acc.name}<span class="qu-type">${isCredit ? '信用卡' : '贷款'}</span></label>
+        <div class="qu-inputs">
+          <div class="qu-field">
+            <span class="qu-field-label">当前余额 (元)</span>
+            <input type="number" class="qu-input" step="0.01" min="0"
+              data-bank="${bi}" data-acc="${ai}" data-field="totalDebt"
+              value="${acc.totalDebt}" />
+          </div>
+          ${isCredit ? `
+          <div class="qu-field">
+            <span class="qu-field-label">最低还款 (元)</span>
+            <input type="number" class="qu-input" step="0.01" min="0"
+              data-bank="${bi}" data-acc="${ai}" data-field="minPayment"
+              value="${acc.minPayment || 0}" />
+          </div>` : `
+          <div class="qu-field">
+            <span class="qu-field-label">月供 (元)</span>
+            <input type="number" class="qu-input" step="0.01" min="0"
+              data-bank="${bi}" data-acc="${ai}" data-field="monthlyPayment"
+              value="${acc.monthlyPayment || 0}" />
+          </div>
+          <div class="qu-field">
+            <span class="qu-field-label">剩余期数</span>
+            <input type="number" class="qu-input" step="1" min="0"
+              data-bank="${bi}" data-acc="${ai}" data-field="remainingMonths"
+              value="${acc.remainingMonths || 0}" />
+          </div>`}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html;
+  document.getElementById('quickUpdateOverlay').classList.add('open');
+}
+
+function closeQuickUpdate() {
+  document.getElementById('quickUpdateOverlay').classList.remove('open');
+}
+
+document.getElementById('quickUpdateSave').addEventListener('click', async () => {
+  // 读取所有输入值写回 DATA
+  document.querySelectorAll('.qu-input').forEach(input => {
+    const bi = parseInt(input.dataset.bank);
+    const ai = parseInt(input.dataset.acc);
+    const field = input.dataset.field;
+    const val = parseFloat(input.value) || 0;
+    DATA.banks[bi].accounts[ai][field] = val;
+  });
+
+  // 更新 lastUpdated
+  DATA.meta.lastUpdated = dayjs().format('YYYY-MM-DD');
+  document.getElementById('lastUpdated').textContent = '更新于 ' + DATA.meta.lastUpdated;
+
+  // 关闭弹窗，立即刷新界面
+  closeQuickUpdate();
+  if (pieChart) pieChart.destroy();
+  if (barChart) barChart.destroy();
+  init();
+
+  // 同步到云端
+  await saveData();
+
+  // 给用户反馈
+  const statusEl = document.getElementById('syncStatus');
+  if (statusEl && syncStatus === 'ok') {
+    statusEl.textContent = '✅ 已更新并同步';
+    setTimeout(() => setSyncStatus('ok'), 2000);
   }
 });
 
