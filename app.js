@@ -9,6 +9,25 @@ const DATA_ROW_ID = 1; // 固定用第1行存储负债数据
 const EXPENSE_TABLE = 'expenses';
 const DEBT_TABLE = 'debt_data';
 
+// ===== 各信用卡账单周期配置 =====
+// billDay: 账单日, dueDay: 还款日, dueDayNextMonth: 还款日是否在下月
+const CARD_BILLING = {
+  'cmb-credit-1':  { name: '招商信用卡',   billDay: 21, dueDay: 21, dueDayNextMonth: false },
+  'gz-credit-1':   { name: '广州银行信用卡', billDay: 13, dueDay: 2,  dueDayNextMonth: true  },
+  'spd-credit-1':  { name: '浦发信用卡',   billDay: 28, dueDay: 17, dueDayNextMonth: true  },
+  'abc-credit-1':  { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
+  'cmbc-credit-1': { name: '民生银行信用卡', billDay: 19, dueDay: 9,  dueDayNextMonth: true  },
+};
+
+// 支付方式名称 → 账户ID 映射（用于消费联动）
+const PAYMENT_TO_CARD = {
+  '招商信用卡':    'cmb-credit-1',
+  '广州银行信用卡': 'gz-credit-1',
+  '浦发信用卡':    'spd-credit-1',
+  '农行信用卡':    'abc-credit-1',
+  '民生信用卡':    'cmbc-credit-1',
+};
+
 // ===== 全局状态 =====
 let DATA = null;
 let pieChart = null;
@@ -128,6 +147,8 @@ function init() {
   renderTimeline();
   initWhatIf();
   initExpenses();
+  renderBillingStatus();
+  schedulePaymentReminders();
   document.getElementById('lastUpdated').textContent = '更新于 ' + DATA.meta.lastUpdated;
 }
 
@@ -859,6 +880,38 @@ async function saveExpenses(expenses) {
   }
 }
 
+// ===== 判断消费属于哪个账单周期 =====
+// 返回 { billMonth: 'YYYY-MM', dueDate: dayjs对象 }
+function getBillingCycle(cardId, expenseDate) {
+  const cfg = CARD_BILLING[cardId];
+  if (!cfg) return null;
+  const d = dayjs(expenseDate);
+  // 账单日当天及之前 → 属于本月账单；账单日之后 → 属于下月账单
+  let billMonth;
+  if (d.date() <= cfg.billDay) {
+    billMonth = d.format('YYYY-MM');
+  } else {
+    billMonth = d.add(1, 'month').format('YYYY-MM');
+  }
+  // 计算还款日
+  const billMonthDay = dayjs(billMonth + '-01');
+  let dueDate;
+  if (cfg.dueDayNextMonth) {
+    dueDate = billMonthDay.add(1, 'month').date(cfg.dueDay);
+  } else {
+    dueDate = billMonthDay.date(cfg.dueDay);
+  }
+  return { billMonth, dueDate };
+}
+
+// ===== 套现/大额检测 =====
+function checkCashAdvance(amount, note, payment) {
+  const cashKeywords = ['取现', '套现', 'pos', 'POS', '预借现金', '现金垫付'];
+  const isCashNote = cashKeywords.some(k => (note || '').toLowerCase().includes(k.toLowerCase()));
+  const isLargeAmount = amount >= 5000 && amount % 100 === 0; // 大额整数
+  return isCashNote || isLargeAmount;
+}
+
 function addExpense() {
   const date = document.getElementById('expDate').value;
   const amount = parseFloat(document.getElementById('expAmount').value);
@@ -871,16 +924,45 @@ function addExpense() {
     return;
   }
 
+  // 套现/大额提醒
+  if (checkCashAdvance(amount, note, payment)) {
+    const confirmed = confirm(
+      `⚠️ 套现/大额消费提醒\n\n金额：¥${amount.toLocaleString()}\n支付：${payment}\n备注：${note || '无'}\n\n` +
+      `检测到可能的套现或大额消费，信用卡套现违规且手续费高昂。\n确认继续录入？`
+    );
+    if (!confirmed) return;
+  }
+
+  // 计算账单周期
+  const cardId = PAYMENT_TO_CARD[payment];
+  const billing = cardId ? getBillingCycle(cardId, date) : null;
+
+  const expense = {
+    id: Date.now(), date, amount, category, payment, note,
+    cardId: cardId || null,
+    billMonth: billing?.billMonth || null,
+    dueDate: billing?.dueDate?.format('YYYY-MM-DD') || null,
+    isCashAdvance: checkCashAdvance(amount, note, payment)
+  };
+
   const expenses = getExpenses();
-  expenses.push({ id: Date.now(), date, amount, category, payment, note });
+  expenses.push(expense);
   expenses.sort((a, b) => b.date.localeCompare(a.date));
   saveExpenses(expenses);
 
   document.getElementById('expAmount').value = '';
   document.getElementById('expNote').value = '';
 
+  // 联动更新对应信用卡的未出账单显示
+  renderBillingStatus();
   renderExpenseTable();
   renderExpenseStats();
+
+  // 成功提示
+  const billTip = billing
+    ? `📋 已计入 ${billing.billMonth} 账单，还款日 ${billing.dueDate.format('M月D日')}`
+    : '';
+  showToast(`✅ 已录入 ${payment} 消费 ¥${amount}${billTip ? '\n' + billTip : ''}`);
 }
 
 function deleteExpense(id) {
@@ -909,15 +991,21 @@ function renderExpenseTable() {
     return;
   }
 
-  tbody.innerHTML = expenses.map(e => `
-    <tr>
+  tbody.innerHTML = expenses.map(e => {
+    const isCash = e.isCashAdvance;
+    const billTip = e.billMonth ? `<span class="bill-tag">${e.billMonth}账单</span>` : '';
+    return `
+    <tr class="${isCash ? 'cash-advance-row' : ''}">
       <td>${e.date}</td>
       <td>${e.category}</td>
-      <td style="color:var(--warning);font-weight:600">${fmt(e.amount)}</td>
-      <td>${e.payment}</td>
+      <td style="color:${isCash ? 'var(--danger)' : 'var(--warning)'};font-weight:600">
+        ${fmt(e.amount)}${isCash ? ' ⚠️' : ''}
+      </td>
+      <td>${e.payment}${billTip}</td>
       <td style="color:var(--text-muted)">${e.note || '-'}</td>
       <td><button class="del-btn" onclick="deleteExpense(${e.id})">🗑️</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderExpenseStats() {
@@ -1131,6 +1219,142 @@ document.getElementById('quickUpdateSave').addEventListener('click', async () =>
     setTimeout(() => setSyncStatus('ok'), 2000);
   }
 });
+
+// ===== Toast 提示 =====
+function showToast(msg) {
+  let toast = document.getElementById('globalToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'globalToast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.className = 'toast toast-show';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.className = 'toast', 3000);
+}
+
+// ===== 账单状态面板 =====
+function renderBillingStatus() {
+  const container = document.getElementById('billingStatusPanel');
+  if (!container || !DATA) return;
+
+  const expenses = getExpenses();
+  const now = today;
+
+  // 对每张信用卡计算：未出账消费、已出账待还、下次还款日
+  const cards = [];
+  Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
+    // 找到对应账户
+    let accData = null;
+    DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === cardId) accData = a; }));
+    if (!accData) return;
+
+    // 当前账单周期：上个账单日 ~ 本账单日
+    let cycleStart, cycleEnd;
+    if (now.date() <= cfg.billDay) {
+      cycleEnd = now.date(cfg.billDay);
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1);
+    } else {
+      cycleStart = now.date(cfg.billDay + 1);
+      cycleEnd = now.add(1, 'month').date(cfg.billDay);
+    }
+
+    // 本周期内的消费（未出账）
+    const unpaidExpenses = expenses.filter(e =>
+      e.cardId === cardId &&
+      dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
+      dayjs(e.date).isBefore(cycleEnd.add(1, 'day'))
+    );
+    const unpaidTotal = unpaidExpenses.reduce((s, e) => s + e.amount, 0);
+
+    // 下次还款日
+    const billing = getBillingCycle(cardId, now.format('YYYY-MM-DD'));
+    const dueDate = billing?.dueDate;
+    const daysUntilDue = dueDate ? dueDate.diff(now, 'day') : null;
+    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
+    const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+
+    cards.push({
+      cardId, cfg, accData,
+      unpaidTotal, unpaidExpenses: unpaidExpenses.length,
+      dueDate, daysUntilDue, isUrgent, isOverdue,
+      minPayment: accData.minPayment || 0,
+    });
+  });
+
+  // 渲染
+  let html = '';
+  cards.forEach(c => {
+    const dueTxt = c.dueDate
+      ? (c.isOverdue
+          ? `<span style="color:var(--danger)">⚠️ 已逾期${Math.abs(c.daysUntilDue)}天</span>`
+          : c.isUrgent
+            ? `<span style="color:var(--danger)">🔴 ${c.dueDate.format('M月D日')} 还款（${c.daysUntilDue}天后）</span>`
+            : `<span style="color:var(--text-muted)">${c.dueDate.format('M月D日')} 还款（${c.daysUntilDue}天后）</span>`)
+      : '-';
+
+    html += `
+      <div class="billing-card">
+        <div class="billing-card-name">${c.cfg.name}</div>
+        <div class="billing-card-row">
+          <span class="billing-label">已出账待还</span>
+          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${fmt(c.minPayment)}</span>
+        </div>
+        <div class="billing-card-row">
+          <span class="billing-label">本期未出账</span>
+          <span class="billing-value" style="color:var(--info)">
+            ${c.unpaidTotal > 0 ? fmt(c.unpaidTotal) + ` (${c.unpaidExpenses}笔)` : '暂无'}
+          </span>
+        </div>
+        <div class="billing-card-row">
+          <span class="billing-label">下次还款日</span>
+          <span>${dueTxt}</span>
+        </div>
+      </div>`;
+  });
+
+  container.innerHTML = html || '<div style="color:var(--text-muted);padding:16px">暂无信用卡数据</div>';
+}
+
+// ===== 还款日提醒（浏览器通知）=====
+function schedulePaymentReminders() {
+  if (!('Notification' in window)) return;
+
+  const now = today;
+  const reminders = [];
+
+  Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
+    const billing = getBillingCycle(cardId, now.format('YYYY-MM-DD'));
+    if (!billing) return;
+    const daysLeft = billing.dueDate.diff(now, 'day');
+    if (daysLeft >= 0 && daysLeft <= 3) {
+      // 找最低还款额
+      let minPay = 0;
+      DATA.banks.forEach(b => b.accounts.forEach(a => {
+        if (a.id === cardId) minPay = a.minPayment || 0;
+      }));
+      reminders.push({ name: cfg.name, daysLeft, dueDate: billing.dueDate, minPay });
+    }
+  });
+
+  if (reminders.length === 0) return;
+
+  // 请求通知权限并发送
+  Notification.requestPermission().then(perm => {
+    if (perm !== 'granted') return;
+    reminders.forEach(r => {
+      const title = r.daysLeft === 0 ? `🔴 今天是${r.name}还款日！` : `⏰ ${r.name}还款提醒`;
+      const body = `${r.dueDate.format('M月D日')}需还款 ${fmt(r.minPay)}，还剩 ${r.daysLeft} 天`;
+      // 每天只提醒一次（用localStorage记录）
+      const key = `reminded_${r.name}_${r.dueDate.format('YYYY-MM-DD')}`;
+      if (!localStorage.getItem(key)) {
+        new Notification(title, { body, icon: './icon-192.png' });
+        localStorage.setItem(key, '1');
+      }
+    });
+  });
+}
 
 // ===== 启动 =====
 loadData();

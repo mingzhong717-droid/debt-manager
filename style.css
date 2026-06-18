@@ -878,6 +878,77 @@ input:focus, select:focus, textarea:focus {
   background: var(--bg3);
 }
 
+/* ===== 账单状态面板 ===== */
+.billing-status-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.billing-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: var(--transition);
+}
+.billing-card:hover { border-color: var(--accent); }
+.billing-card-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.billing-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+.billing-label { color: var(--text-muted); }
+.billing-value { font-weight: 600; color: var(--warning); }
+.billing-value.urgent { color: var(--danger); }
+
+/* ===== Toast 提示 ===== */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  white-space: pre-line;
+  text-align: center;
+  max-width: 320px;
+  box-shadow: var(--shadow);
+}
+.toast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ===== 套现标红 ===== */
+.cash-advance-row { background: rgba(255, 77, 109, 0.06); }
+.bill-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  background: rgba(77, 171, 247, 0.15);
+  color: var(--info);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 /* ===== 空状态 ===== */
 .empty-state {
   text-align: center;
