@@ -1262,6 +1262,7 @@ function renderExpenseStats() {
   });
 
   const statsEl = document.getElementById('expenseStats');
+  if (!statsEl) return; // 旧版 DOM 元素已移除，安全退出
   statsEl.innerHTML = `
     <div class="expense-stat-row">
       <span>本月总消费</span>
