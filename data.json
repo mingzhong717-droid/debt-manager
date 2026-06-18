@@ -13,49 +13,66 @@
       "icon": "🏦",
       "accounts": [
         {
+          "id": "cmb-loan-1",
+          "type": "loan",
+          "name": "贷款一·闪电贷（等额本息）",
+          "totalDebt": 9388.73,
+          "monthlyPayment": 2347.71,
+          "interestRate": 0.036,
+          "remainingMonths": 4,
+          "dueDay": 6,
+          "startDate": "2024-10-06",
+          "endDate": "2026-09-27",
+          "note": "贷款编号6655665997300001，剩余第33-36期，到期2026-09-27"
+        },
+        {
+          "id": "cmb-loan-2",
+          "type": "loan",
+          "name": "贷款二·闪电贷（到期还本）",
+          "totalDebt": 43537.5,
+          "monthlyPayment": 179.17,
+          "interestRate": 0.05,
+          "remainingMonths": 3,
+          "dueDay": 6,
+          "startDate": "2025-10-04",
+          "endDate": "2026-09-04",
+          "note": "贷款编号6655665997300003，到期2026-09-04需还本43,000元，🔴 大额需提前备款"
+        },
+        {
           "id": "cmb-credit-1",
           "type": "credit",
           "name": "招商信用卡",
-          "totalDebt": 45000,
-          "creditLimit": 80000,
-          "billDay": 8,
-          "dueDay": 28,
-          "minPayment": 1350,
+          "totalDebt": 4388.33,
+          "creditLimit": 0,
+          "billDay": 21,
+          "dueDay": 21,
+          "minPayment": 4388.33,
           "interestRate": 0.0005,
+          "note": "6月账单当期应还，2026-06-21到期，含旧分期第5期2,613.28元，🔴 已到期",
           "installments": [
             {
-              "id": "cmb-inst-1",
-              "name": "MacBook Pro 分期",
-              "originalAmount": 18000,
-              "remainingAmount": 12000,
-              "monthlyPayment": 1500,
-              "remainingMonths": 8,
-              "startDate": "2025-11-01",
-              "endDate": "2026-06-30"
+              "id": "cmb-inst-old",
+              "name": "信用卡旧分期（剩余7期）",
+              "originalAmount": 29577.23,
+              "remainingAmount": 18292.91,
+              "monthlyPayment": 2613.28,
+              "remainingMonths": 7,
+              "startDate": "2026-01-21",
+              "endDate": "2027-01-21",
+              "note": "2026-01-21申请，12期，含贴息-93.59元，第6期起进入7月账单"
             },
             {
-              "id": "cmb-inst-2",
-              "name": "装修分期",
-              "originalAmount": 30000,
-              "remainingAmount": 20000,
-              "monthlyPayment": 2000,
-              "remainingMonths": 10,
-              "startDate": "2025-09-01",
-              "endDate": "2026-06-30"
+              "id": "cmb-inst-new",
+              "name": "信用卡新分期（12期）",
+              "originalAmount": 15617.31,
+              "remainingAmount": 16739.78,
+              "monthlyPayment": 1392.04,
+              "remainingMonths": 12,
+              "startDate": "2026-07-21",
+              "endDate": "2027-06-21",
+              "note": "2026-06新办，含贴息-49.42元，首期还款日2026-07-21"
             }
           ]
-        },
-        {
-          "id": "cmb-loan-1",
-          "type": "loan",
-          "name": "招商闪电贷",
-          "totalDebt": 60000,
-          "monthlyPayment": 3500,
-          "interestRate": 0.0395,
-          "remainingMonths": 18,
-          "dueDay": 15,
-          "startDate": "2025-01-15",
-          "endDate": "2026-07-15"
         }
       ]
     },
@@ -70,22 +87,46 @@
           "id": "gz-credit-1",
           "type": "credit",
           "name": "广州银行信用卡",
-          "totalDebt": 28000,
-          "creditLimit": 50000,
-          "billDay": 5,
-          "dueDay": 25,
-          "minPayment": 840,
+          "totalDebt": 17826.07,
+          "creditLimit": 24000,
+          "billDay": 13,
+          "dueDay": 2,
+          "minPayment": 702.2,
           "interestRate": 0.0005,
+          "note": "7月已出账账单702.20元，2026-07-02到期，🔴 本周内",
           "installments": [
             {
               "id": "gz-inst-1",
-              "name": "手机分期",
-              "originalAmount": 8000,
-              "remainingAmount": 4000,
-              "monthlyPayment": 800,
-              "remainingMonths": 5,
-              "startDate": "2026-01-01",
-              "endDate": "2026-05-31"
+              "name": "消费分期一（36期）",
+              "originalAmount": 8693.08,
+              "remainingAmount": 6741.71,
+              "monthlyPayment": 241.47,
+              "remainingMonths": 26,
+              "startDate": "2025-09-02",
+              "endDate": "2028-11-02",
+              "note": "剩余本金6,278.35+利息463.36，每月逐减"
+            },
+            {
+              "id": "gz-inst-2",
+              "name": "消费分期二（36期）",
+              "originalAmount": 196.0,
+              "remainingAmount": 152.04,
+              "monthlyPayment": 5.44,
+              "remainingMonths": 26,
+              "startDate": "2025-09-02",
+              "endDate": "2028-11-02",
+              "note": "剩余本金141.57+利息10.47"
+            },
+            {
+              "id": "gz-inst-3",
+              "name": "账单分期三（36期）",
+              "originalAmount": 13139.34,
+              "remainingAmount": 10189.87,
+              "monthlyPayment": 364.98,
+              "remainingMonths": 26,
+              "startDate": "2025-09-02",
+              "endDate": "2028-11-02",
+              "note": "剩余本金9,489.54+利息700.33"
             }
           ]
         }
@@ -102,36 +143,37 @@
           "id": "spdb-credit-1",
           "type": "credit",
           "name": "浦发信用卡",
-          "totalDebt": 35000,
-          "creditLimit": 60000,
-          "billDay": 12,
-          "dueDay": 2,
-          "minPayment": 1050,
+          "totalDebt": 26267.24,
+          "creditLimit": 28000,
+          "billDay": 28,
+          "dueDay": 28,
+          "minPayment": 7036.61,
           "interestRate": 0.0005,
+          "note": "5月账单剩余待还15,656.33元+6月未出账7,036.61元（6月28日出账）",
           "installments": [
             {
-              "id": "spdb-inst-1",
-              "name": "家电分期",
-              "originalAmount": 15000,
-              "remainingAmount": 9000,
-              "monthlyPayment": 1500,
-              "remainingMonths": 6,
+              "id": "spdb-inst-cash",
+              "name": "现金分期（万用金，剩余5期）",
+              "originalAmount": 14000,
+              "remainingAmount": 3298.2,
+              "monthlyPayment": 659.66,
+              "remainingMonths": 5,
+              "startDate": "2024-12-01",
+              "endDate": "2026-11-01",
+              "note": "24期，年化12.10%，剩余本金3,200.77+利息97.43"
+            },
+            {
+              "id": "spdb-inst-merchant",
+              "name": "商户分期（3笔，剩余2期）",
+              "originalAmount": 414.15,
+              "remainingAmount": 276.1,
+              "monthlyPayment": 138.05,
+              "remainingMonths": 2,
               "startDate": "2026-01-01",
-              "endDate": "2026-06-30"
+              "endDate": "2026-08-01",
+              "note": "3笔商户分期，剩余本金276.10元"
             }
           ]
-        },
-        {
-          "id": "spdb-loan-1",
-          "type": "loan",
-          "name": "浦发消费贷",
-          "totalDebt": 40000,
-          "monthlyPayment": 2200,
-          "interestRate": 0.0488,
-          "remainingMonths": 20,
-          "dueDay": 10,
-          "startDate": "2025-03-10",
-          "endDate": "2026-11-10"
         }
       ]
     },
@@ -145,26 +187,49 @@
         {
           "id": "abc-credit-1",
           "type": "credit",
-          "name": "农行信用卡",
-          "totalDebt": 22000,
-          "creditLimit": 40000,
-          "billDay": 18,
-          "dueDay": 8,
-          "minPayment": 660,
-          "interestRate": 0.0005,
-          "installments": []
-        },
-        {
-          "id": "abc-loan-1",
-          "type": "loan",
-          "name": "农行惠农贷",
-          "totalDebt": 30000,
-          "monthlyPayment": 1800,
-          "interestRate": 0.0365,
-          "remainingMonths": 17,
-          "dueDay": 20,
-          "startDate": "2025-02-20",
-          "endDate": "2026-07-20"
+          "name": "农业银行信用卡",
+          "totalDebt": 17065.76,
+          "creditLimit": 16000,
+          "billDay": 17,
+          "dueDay": 6,
+          "minPayment": 2941.68,
+          "interestRate": 0.0048,
+          "note": "6月未出账单2,941.68元，还款日2026-07-06，含三笔分期当期",
+          "installments": [
+            {
+              "id": "abc-inst-1",
+              "name": "消费分期一（24期，月利率0.48%）",
+              "originalAmount": 7252.97,
+              "remainingAmount": 3709.98,
+              "monthlyPayment": 336.81,
+              "remainingMonths": 11,
+              "startDate": "2025-06-06",
+              "endDate": "2027-06-06",
+              "note": "账号2272****3180，每期本金302+利息34.81，结清日2027-05-06"
+            },
+            {
+              "id": "abc-inst-2",
+              "name": "消费分期二（12期，月利率0.48%）",
+              "originalAmount": 9863.17,
+              "remainingAmount": 3476.57,
+              "monthlyPayment": 869.34,
+              "remainingMonths": 4,
+              "startDate": "2025-11-04",
+              "endDate": "2026-11-04",
+              "note": "账号2272****4140，每期本金822+利息47.34，结清日2026-10-06"
+            },
+            {
+              "id": "abc-inst-3",
+              "name": "消费分期三（12期，月利率0.48%）",
+              "originalAmount": 7155.71,
+              "remainingAmount": 6937.53,
+              "monthlyPayment": 627.12,
+              "remainingMonths": 11,
+              "startDate": "2026-06-05",
+              "endDate": "2027-06-05",
+              "note": "账号2272****5519，每期本金596+利息约31.12，结清日2027-06-06"
+            }
+          ]
         }
       ]
     },
@@ -178,23 +243,25 @@
         {
           "id": "cmbc-credit-1",
           "type": "credit",
-          "name": "民生信用卡",
-          "totalDebt": 18000,
-          "creditLimit": 30000,
-          "billDay": 22,
-          "dueDay": 12,
-          "minPayment": 540,
-          "interestRate": 0.0005,
+          "name": "民生银行信用卡",
+          "totalDebt": 17554.35,
+          "creditLimit": 56000,
+          "billDay": 19,
+          "dueDay": 9,
+          "minPayment": 3510.86,
+          "interestRate": 0.0045,
+          "note": "临时额度56,000元（2026-07-18到期），永久额度40,000元",
           "installments": [
             {
               "id": "cmbc-inst-1",
-              "name": "旅游分期",
-              "originalAmount": 12000,
-              "remainingAmount": 6000,
-              "monthlyPayment": 1000,
-              "remainingMonths": 6,
-              "startDate": "2026-01-01",
-              "endDate": "2026-06-30"
+              "name": "账单分期（总账分期，剩余5期）",
+              "originalAmount": 39971.89,
+              "remainingAmount": 17554.35,
+              "monthlyPayment": 3510.87,
+              "remainingMonths": 5,
+              "startDate": "2025-11-03",
+              "endDate": "2026-11-08",
+              "note": "12期，总利息2,158.48元，月利率约0.45%，剩余本金16,654.96+利息899.39，✅ 最快结清"
             }
           ]
         }
