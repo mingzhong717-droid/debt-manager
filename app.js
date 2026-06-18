@@ -1782,12 +1782,14 @@ async function handleAISend() {
 
   // 记录用户气泡
   const imgSrc = hasImg ? document.getElementById('aiImagePreview').src : null;
+  // 提前保存图片数据，clearAIImage 会清空全局变量
+  const savedBase64 = aiImageBase64;
+  const savedMime   = aiImageMime;
   aiChatBubbles.push({ role: 'user', text: text || '（图片）', imgSrc });
   renderAIChat();
 
-  // 清空输入
+  // 清空输入框（图片在 VL 调用后再清）
   document.getElementById('aiTextInput').value = '';
-  clearAIImage();
 
   try {
     let userMsgForMain = text; // 最终加入主线的文字内容
@@ -1798,8 +1800,9 @@ async function handleAISend() {
       // 先推一个"识别中"占位气泡，显示打点动画
       aiChatBubbles.push({ role: 'ai', text: '⏳ 图片识别中', parsed: null, streaming: true });
       renderAIChat();
-      const vlResult = await callVLModel(text, { base64: aiImageBase64, mime: aiImageMime });
-      // 识别完成，移除占位气泡
+      const vlResult = await callVLModel(text, { base64: savedBase64, mime: savedMime });
+      // 识别完成，清空图片预览并移除占位气泡
+      clearAIImage();
       aiChatBubbles.pop();
       userMsgForMain = `[图片识别结果] ${vlResult}\n${text ? '用户补充：' + text : ''}`.trim();
     }
@@ -1844,6 +1847,7 @@ async function handleAISend() {
 
   } catch (err) {
     console.error('[AI]', err);
+    clearAIImage(); // 出错时也清掉图片预览
     aiChatBubbles.push({ role: 'ai', text: `❌ ${err.message}`, parsed: null });
     renderAIChat();
     setAIStatus(`❌ 识别失败：${err.message}`, 'error');
@@ -2496,3 +2500,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== 启动 =====
 loadData();
+
+// ===== 下拉刷新 =====
+(function initPullRefresh() {
+  const indicator = document.getElementById('pullRefreshIndicator');
+  const arrow = document.getElementById('pullRefreshArrow');
+  const text = document.getElementById('pullRefreshText');
+  if (!indicator) return;
+
+  const THRESHOLD = 70;   // 触发刷新所需下拉距离（px）
+  const MAX_PULL = 110;   // 最大下拉距离（px）
+  let startY = 0;
+  let pulling = false;
+  let refreshing = false;
+
+  function setSpinner() {
+    arrow.style.display = 'none';
+    // 动态插入 spinner（避免重复）
+    if (!document.getElementById('pullSpinner')) {
+      const s = document.createElement('span');
+      s.id = 'pullSpinner';
+      s.className = 'pull-refresh-spinner';
+      indicator.insertBefore(s, text);
+    }
+    text.textContent = '刷新中...';
+    indicator.classList.add('refreshing');
+    indicator.classList.remove('visible');
+  }
+
+  function resetIndicator() {
+    indicator.classList.remove('visible', 'refreshing');
+    arrow.style.display = '';
+    arrow.classList.remove('ready');
+    text.textContent = '下拉刷新';
+    const s = document.getElementById('pullSpinner');
+    if (s) s.remove();
+    pulling = false;
+    refreshing = false;
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    // 只在页面滚动到顶部时才允许触发
+    if (window.scrollY > 0) return;
+    // AI 页面内部有独立滚动区域，跳过
+    const aiPage = document.getElementById('page-ai');
+    if (aiPage && aiPage.classList.contains('active')) return;
+    startY = e.touches[0].clientY;
+    pulling = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; return; }
+
+    const ratio = Math.min(dy / MAX_PULL, 1);
+    // 用 translateY 让指示器跟随手指
+    indicator.style.transition = 'none';
+    indicator.style.transform = `translateY(${-100 + ratio * 100}%)`;
+    indicator.classList.add('visible');
+
+    if (dy >= THRESHOLD) {
+      arrow.classList.add('ready');
+      text.textContent = '松开立即刷新';
+    } else {
+      arrow.classList.remove('ready');
+      text.textContent = '下拉刷新';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async (e) => {
+    if (!pulling || refreshing) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    indicator.style.transition = '';
+    indicator.style.transform = '';
+
+    if (dy >= THRESHOLD) {
+      refreshing = true;
+      setSpinner();
+      try {
+        await loadData();
+      } finally {
+        setTimeout(resetIndicator, 600);
+      }
+    } else {
+      resetIndicator();
+    }
+  }, { passive: true });
+})();
+
+// ===== 回到顶部按钮 =====
+(function initBackToTop() {
+  const btn = document.getElementById('backToTopBtn');
+  if (!btn) return;
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  }, { passive: true });
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();

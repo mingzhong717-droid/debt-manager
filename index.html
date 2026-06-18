@@ -465,44 +465,38 @@
 <!-- ===== Toast ===== -->
 <div class="toast" id="toast"></div>
 
-<script src="app.js"></script>
-
-<!-- SW 更新提示条 -->
-<div id="sw-update-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#4f46e5;color:#fff;text-align:center;padding:10px 16px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);">
-  🎉 发现新版本！<button onclick="swDoUpdate()" style="margin-left:12px;background:#fff;color:#4f46e5;border:none;border-radius:6px;padding:4px 14px;font-size:13px;font-weight:600;cursor:pointer;">立即更新</button>
+<!-- ===== 下拉刷新指示器 ===== -->
+<div id="pullRefreshIndicator">
+  <span class="pull-refresh-arrow" id="pullRefreshArrow">↓</span>
+  <span id="pullRefreshText">下拉刷新</span>
 </div>
+
+<!-- ===== 回到顶部按钮 ===== -->
+<button id="backToTopBtn" title="回到顶部">↑</button>
+
+<script src="app.js"></script>
 
 <!-- Service Worker 注册 -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 检测到新 SW 等待激活
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            // 有旧 SW 在控制页面，新 SW 已就绪 → 显示提示条
-            document.getElementById('sw-update-bar').style.display = 'block';
-            window._pendingSW = newSW;
-          }
-        });
-      });
-    }).catch(err => console.warn('SW registration failed:', err));
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
 
-    // 新 SW 激活后自动刷新页面
+    // 新 SW 激活（skipWaiting 后 controller 切换）→ Toast 提示后刷新
+    let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.location.reload();
+      if (reloading) return;
+      reloading = true;
+      // 用已有的 showToast 函数提示，延迟 800ms 再刷新让用户看到
+      if (typeof showToast === 'function') {
+        showToast('✅ 已更新到最新版本，正在刷新…');
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        window.location.reload();
+      }
     });
   });
-}
-
-function swDoUpdate() {
-  if (window._pendingSW) {
-    window._pendingSW.postMessage('skipWaiting');
-  } else {
-    window.location.reload();
-  }
 }
 </script>
 </body>
