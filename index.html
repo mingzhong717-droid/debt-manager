@@ -144,10 +144,13 @@
     <!-- 月份筛选 -->
     <div class="analysis-header">
       <div class="section-title" style="margin:0">消费分析</div>
-      <div class="analysis-month-nav">
-        <button class="month-nav-btn" id="analysisPrevMonth">‹</button>
-        <span class="analysis-month-label" id="analysisMonthLabel">--</span>
-        <button class="month-nav-btn" id="analysisNextMonth">›</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-add-expense" id="openAddExpenseBtn" onclick="openAddExpense()">＋ 记一笔</button>
+        <div class="analysis-month-nav">
+          <button class="month-nav-btn" id="analysisPrevMonth">‹</button>
+          <span class="analysis-month-label" id="analysisMonthLabel">--</span>
+          <button class="month-nav-btn" id="analysisNextMonth">›</button>
+        </div>
       </div>
     </div>
 
@@ -263,6 +266,70 @@
   </section>
 
 </main>
+
+<!-- ===== 快速录入消费弹窗 ===== -->
+<div class="modal-overlay" id="addExpenseOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>💸 记一笔消费</span>
+      <button class="modal-close" id="addExpenseClose" onclick="closeAddExpense()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="expDate" />
+        </div>
+        <div class="form-group">
+          <label>金额 (元)</label>
+          <input type="number" id="expAmount" min="0" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>分类</label>
+          <select id="expCategory">
+            <option value="餐饮堂食">🍜 餐饮堂食</option>
+            <option value="外卖">🛵 外卖</option>
+            <option value="买菜生鲜">🥦 买菜生鲜</option>
+            <option value="烟酒零食">🚬 烟酒零食</option>
+            <option value="交通出行">🚇 交通出行</option>
+            <option value="购物数码">📱 购物数码</option>
+            <option value="购物服装">👕 购物服装</option>
+            <option value="日用百货">🧴 日用百货</option>
+            <option value="娱乐休闲">🎮 娱乐休闲</option>
+            <option value="订阅会员">📺 订阅会员</option>
+            <option value="医疗健康">🏥 医疗健康</option>
+            <option value="教育学习">📚 教育学习</option>
+            <option value="居家大件">🏠 居家大件</option>
+            <option value="转账还款">💸 转账还款</option>
+            <option value="宠物">🐾 宠物</option>
+            <option value="其他">📦 其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>支付方式</label>
+          <select id="expPayment">
+            <option value="招商信用卡">招商信用卡</option>
+            <option value="广州银行信用卡">广州银行信用卡</option>
+            <option value="浦发信用卡">浦发信用卡</option>
+            <option value="农行信用卡">农行信用卡</option>
+            <option value="民生信用卡">民生信用卡</option>
+            <option value="花呗">花呗</option>
+            <option value="美团月付">美团月付</option>
+            <option value="微信/支付宝">微信/支付宝</option>
+            <option value="现金">现金</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <input type="text" id="expNote" placeholder="可选备注..." />
+      </div>
+      <button class="btn-primary" onclick="addExpense()" style="width:100%;margin-top:8px">💾 保存消费</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== What-if 抽屉 ===== -->
 <div class="drawer-overlay" id="whatifOverlay" onclick="closeWhatif()"></div>

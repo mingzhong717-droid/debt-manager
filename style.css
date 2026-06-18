@@ -1717,9 +1717,33 @@ tr.refund-row td:nth-child(3) { color: var(--success) !important; }
 }
 
 /* ===== 消费分析页 ===== */
+.btn-add-expense {
+background: linear-gradient(135deg, var(--accent), #a78bfa);
+color: #fff;
+border: none;
+border-radius: 20px;
+padding: 6px 16px;
+font-size: 0.85rem;
+font-weight: 600;
+cursor: pointer;
+transition: var(--transition);
+white-space: nowrap;
+}
+.btn-add-expense:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.pie-empty-placeholder {
+display: flex;
+align-items: center;
+justify-content: center;
+height: 100%;
+min-height: 160px;
+color: var(--text-muted);
+font-size: 0.9rem;
+}
+
 .analysis-header {
-  display: flex;
-  align-items: center;
+display: flex;
+align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
 }

@@ -1026,6 +1026,21 @@ function checkCashAdvance(amount, note, payment) {
   return isCashNote || isLargeAmount;
 }
 
+// ===== 快速录入消费弹窗 =====
+function openAddExpense() {
+  const overlay = document.getElementById('addExpenseOverlay');
+  if (!overlay) return;
+  // 默认日期为今天
+  const dateEl = document.getElementById('expDate');
+  if (dateEl && !dateEl.value) dateEl.value = today.format('YYYY-MM-DD');
+  overlay.classList.add('open');
+}
+
+function closeAddExpense() {
+  const overlay = document.getElementById('addExpenseOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
 function addExpense() {
   const date = document.getElementById('expDate').value;
   const amount = parseFloat(document.getElementById('expAmount').value);
@@ -1067,10 +1082,14 @@ function addExpense() {
   document.getElementById('expAmount').value = '';
   document.getElementById('expNote').value = '';
 
+  // 关闭弹窗
+  closeAddExpense();
+
   // 联动更新对应信用卡的未出账单显示
   renderBillingStatus();
   renderExpenseTable();
   renderExpenseStats();
+  renderAnalysisPage();
 
   // 成功提示
   const billTip = billing
@@ -2240,7 +2259,22 @@ function renderAnalysisCharts() {
   const pieEl = document.getElementById('analysisPieChart');
   if (pieEl) {
     const ctx = pieEl.getContext('2d');
-    if (window._analysisPieChart) window._analysisPieChart.destroy();
+    if (window._analysisPieChart) { window._analysisPieChart.destroy(); window._analysisPieChart = null; }
+    // 空数据时显示占位
+    const pieWrap = pieEl.parentElement;
+    const existPlaceholder = pieWrap?.querySelector('.pie-empty-placeholder');
+    if (sorted.length === 0) {
+      pieEl.style.display = 'none';
+      if (!existPlaceholder) {
+        const ph = document.createElement('div');
+        ph.className = 'pie-empty-placeholder';
+        ph.textContent = '本月暂无消费记录';
+        pieWrap.appendChild(ph);
+      }
+    } else {
+      pieEl.style.display = '';
+      if (existPlaceholder) existPlaceholder.remove();
+    }
     if (sorted.length > 0) {
       window._analysisPieChart = new Chart(ctx, {
         type: 'doughnut',
