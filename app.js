@@ -57,11 +57,19 @@ function setSyncStatus(status) {
   el.style.color = s.color;
 }
 
-// ===== 数据加载（优先云端，降级本地）=====
+// ===== 数据加载（强制云端优先，localStorage 仅作离线降级）=====
+const CACHE_VERSION = '2';  // 升级此版本号可强制清除旧缓存
 async function loadData() {
+  // 清除版本不匹配的旧缓存
+  if (localStorage.getItem('debtManagerCacheVer') !== CACHE_VERSION) {
+    localStorage.removeItem('debtManagerData');
+    localStorage.setItem('debtManagerCacheVer', CACHE_VERSION);
+    console.log('检测到旧缓存，已清除，将从云端重新加载');
+  }
+
   try {
     setSyncStatus('syncing');
-    // 尝试从 Supabase 读取
+    // 强制从 Supabase 读取（不走缓存）
     const rows = await sbFetch(DEBT_TABLE + '?id=eq.' + DATA_ROW_ID + '&select=payload');
     if (rows && rows.length > 0 && rows[0].payload) {
       DATA = rows[0].payload;
