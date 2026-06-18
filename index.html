@@ -477,12 +477,33 @@
 
 <script src="app.js"></script>
 
-<!-- Service Worker 注册 -->
+<!-- Service Worker 注册 & 强制更新 -->
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+// ⚠️ 每次发布新版本，修改这个版本号，浏览器会自动清除旧缓存并刷新
+const APP_VERSION = 'v10';
 
-    // 新 SW 激活后自动刷新页面
+(async function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // 检查是否需要强制清除（版本号变了）
+  const storedVer = localStorage.getItem('appVersion');
+  if (storedVer !== APP_VERSION) {
+    console.log(`[SW] 版本变更 ${storedVer} → ${APP_VERSION}，清除旧缓存...`);
+    // 1. 注销所有旧 SW
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+    // 2. 清空所有 Cache Storage
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    // 3. 记录新版本号
+    localStorage.setItem('appVersion', APP_VERSION);
+    // 4. 强制刷新（绕过缓存）
+    window.location.reload(true);
+    return; // 刷新后重新执行，不继续往下走
+  }
+
+  // 版本一致：正常注册 SW
+  window.addEventListener('load', () => {
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloading) return;
@@ -491,12 +512,7 @@ if ('serviceWorker' in navigator) {
     });
 
     function forceActivateWaiting(reg) {
-      // 如果有等待中的新 SW，立即发消息让它 skipWaiting
-      if (reg.waiting) {
-        reg.waiting.postMessage('skipWaiting');
-        return;
-      }
-      // 监听新 SW 进入 waiting 状态
+      if (reg.waiting) { reg.waiting.postMessage('skipWaiting'); return; }
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         if (!newSW) return;
@@ -509,14 +525,11 @@ if ('serviceWorker' in navigator) {
     }
 
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 立即处理已有的 waiting SW（PWA 冷启动场景）
       forceActivateWaiting(reg);
-      // 每次打开都主动检查新版本
       reg.update().then(() => forceActivateWaiting(reg));
     }).catch(err => console.warn('SW registration failed:', err));
-
   });
-}
+})();
 </script>
 </body>
 </html>
