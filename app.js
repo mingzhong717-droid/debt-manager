@@ -1831,11 +1831,20 @@ document.getElementById('aiClearBtn').addEventListener('click', () => {
 });
 
 // ---- 发送 ----
-// 用 pointerdown + preventDefault 阻止手机端键盘收起导致的焦点丢失，确保第一次点击就能发送
-document.getElementById('aiSendBtn').addEventListener('pointerdown', (e) => {
-  e.preventDefault(); // 阻止 blur，保持输入框焦点
+// 手机端：touchend 优先触发（比 click 早 300ms），preventDefault 阻止后续 click 重复触发
+// 桌面端：touchend 不触发，走 click
+const _sendBtn = document.getElementById('aiSendBtn');
+let _sendTouched = false;
+_sendBtn.addEventListener('touchend', (e) => {
+  e.preventDefault(); // 阻止 blur + 阻止后续 click
+  _sendTouched = true;
+  handleAISend();
+  setTimeout(() => { _sendTouched = false; }, 500);
 });
-document.getElementById('aiSendBtn').addEventListener('click', handleAISend);
+_sendBtn.addEventListener('click', (e) => {
+  if (_sendTouched) return; // 已由 touchend 处理，跳过
+  handleAISend();
+});
 document.getElementById('aiTextInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAISend(); }
 });

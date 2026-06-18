@@ -481,18 +481,40 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 每次打开页面都主动检查 sw.js 是否有新版本（绕过浏览器对 SW 的24h检测限制）
-      reg.update();
-    }).catch(err => console.warn('SW registration failed:', err));
 
-    // 新 SW 激活（skipWaiting 后 controller 切换）→ 自动刷新页面
+    // 新 SW 激活后自动刷新页面
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloading) return;
       reloading = true;
       window.location.reload();
     });
+
+    function forceActivateWaiting(reg) {
+      // 如果有等待中的新 SW，立即发消息让它 skipWaiting
+      if (reg.waiting) {
+        reg.waiting.postMessage('skipWaiting');
+        return;
+      }
+      // 监听新 SW 进入 waiting 状态
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            newSW.postMessage('skipWaiting');
+          }
+        });
+      });
+    }
+
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 立即处理已有的 waiting SW（PWA 冷启动场景）
+      forceActivateWaiting(reg);
+      // 每次打开都主动检查新版本
+      reg.update().then(() => forceActivateWaiting(reg));
+    }).catch(err => console.warn('SW registration failed:', err));
+
   });
 }
 </script>
