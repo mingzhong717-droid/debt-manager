@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人负债管理中心</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6c63ff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="负债管理" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+</head>
+<body>
+
+<!-- ===== 顶部导航（桌面） ===== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="logo">💰 负债管理中心</span>
+    <span class="last-updated" id="lastUpdated"></span>
+  </div>
+  <nav class="topbar-nav" id="topNav">
+    <button class="nav-btn active" data-page="overview">总览</button>
+    <button class="nav-btn" data-page="installments">分期追踪</button>
+    <button class="nav-btn" data-page="timeline">结清时间线</button>
+    <button class="nav-btn" data-page="whatif">What-if</button>
+    <button class="nav-btn" data-page="expenses">消费记录</button>
+  </nav>
+  <button class="edit-data-btn" id="editDataBtn">✏️ 编辑数据</button>
+</header>
+
+<!-- ===== 底部导航（移动端） ===== -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-btn active" data-page="overview">
+    <span class="bnav-icon">📊</span>
+    <span class="bnav-label">总览</span>
+  </button>
+  <button class="bottom-nav-btn" data-page="installments">
+    <span class="bnav-icon">📋</span>
+    <span class="bnav-label">分期</span>
+  </button>
+  <button class="bottom-nav-btn" data-page="timeline">
+    <span class="bnav-icon">📅</span>
+    <span class="bnav-label">时间线</span>
+  </button>
+  <button class="bottom-nav-btn" data-page="whatif">
+    <span class="bnav-icon">🔮</span>
+    <span class="bnav-label">模拟</span>
+  </button>
+  <button class="bottom-nav-btn" data-page="expenses">
+    <span class="bnav-icon">💸</span>
+    <span class="bnav-label">消费</span>
+  </button>
+</nav>
+
+<!-- ===== 主内容区 ===== -->
+<main class="main-content">
+
+  <!-- ========== PAGE: 总览 ========== -->
+  <section class="page active" id="page-overview">
+
+    <!-- 汇总横幅 -->
+    <div class="summary-banner">
+      <div class="summary-item">
+        <div class="summary-label">总负债</div>
+        <div class="summary-value danger" id="totalDebt">--</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="summary-label">本月应还</div>
+        <div class="summary-value warning" id="monthlyDue">--</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="summary-label">月收入</div>
+        <div class="summary-value" id="monthlyIncome">--</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="summary-label">负债收入比</div>
+        <div class="summary-value" id="debtRatio">--</div>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <div class="summary-label">最近还款日</div>
+        <div class="summary-value info" id="nextDueDate">--</div>
+      </div>
+    </div>
+
+    <!-- 银行卡片区 -->
+    <div class="section-title">各银行负债详情</div>
+    <div class="bank-cards" id="bankCards"></div>
+
+    <!-- 图表区 -->
+    <div class="charts-row">
+      <!-- 负债占比饼图 -->
+      <div class="chart-card">
+        <div class="chart-title">负债占比分布</div>
+        <div class="chart-wrap">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 月度还款压力柱状图 -->
+      <div class="chart-card chart-card-wide">
+        <div class="chart-title">未来12个月还款压力</div>
+        <div class="chart-wrap">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 还款日历 -->
+    <div class="section-title">本月还款日历</div>
+    <div class="calendar-wrap" id="calendarWrap"></div>
+
+  </section>
+
+  <!-- ========== PAGE: 分期追踪 ========== -->
+  <section class="page" id="page-installments">
+    <div class="section-title">多银行分期精细追踪</div>
+    <div id="installmentList"></div>
+  </section>
+
+  <!-- ========== PAGE: 结清时间线 ========== -->
+  <section class="page" id="page-timeline">
+    <div class="section-title">各账户结清时间线</div>
+    <div id="timelineList"></div>
+  </section>
+
+  <!-- ========== PAGE: What-if 模拟 ========== -->
+  <section class="page" id="page-whatif">
+    <div class="section-title">What-if 还款模拟</div>
+    <div class="whatif-container">
+      <div class="whatif-controls">
+        <div class="form-group">
+          <label>选择账户</label>
+          <select id="whatifAccount"></select>
+        </div>
+        <div class="form-group">
+          <label>每月额外还款金额 (元)</label>
+          <input type="number" id="whatifExtra" value="1000" min="0" step="500" />
+        </div>
+        <div class="form-group">
+          <label>一次性提前还款 (元)</label>
+          <input type="number" id="whatifLump" value="0" min="0" step="1000" />
+        </div>
+        <button class="btn-primary" id="whatifCalc">计算影响</button>
+      </div>
+      <div class="whatif-result" id="whatifResult">
+        <div class="result-placeholder">👆 设置参数后点击计算</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAGE: 消费记录 ========== -->
+  <section class="page" id="page-expenses">
+    <div class="section-title">每日消费录入</div>
+    <div class="expense-container">
+      <div class="expense-form card">
+        <h3>新增消费</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>日期</label>
+            <input type="date" id="expDate" />
+          </div>
+          <div class="form-group">
+            <label>金额 (元)</label>
+            <input type="number" id="expAmount" placeholder="0.00" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分类</label>
+            <select id="expCategory">
+              <option value="餐饮">🍜 餐饮</option>
+              <option value="交通">🚇 交通</option>
+              <option value="购物">🛍️ 购物</option>
+              <option value="娱乐">🎮 娱乐</option>
+              <option value="医疗">🏥 医疗</option>
+              <option value="教育">📚 教育</option>
+              <option value="居家">🏠 居家</option>
+              <option value="其他">📦 其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>支付方式</label>
+            <select id="expPayment">
+              <option value="招商信用卡">招商信用卡</option>
+              <option value="广州银行信用卡">广州银行信用卡</option>
+              <option value="浦发信用卡">浦发信用卡</option>
+              <option value="农行信用卡">农行信用卡</option>
+              <option value="民生信用卡">民生信用卡</option>
+              <option value="微信/支付宝">微信/支付宝</option>
+              <option value="现金">现金</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <input type="text" id="expNote" placeholder="可选备注..." />
+        </div>
+        <button class="btn-primary" id="addExpense">+ 添加记录</button>
+      </div>
+
+      <div class="expense-stats card">
+        <h3>本月消费统计</h3>
+        <div id="expenseStats"></div>
+        <canvas id="expensePieChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:24px">消费记录列表</div>
+    <div class="expense-list-wrap">
+      <div class="expense-filter">
+        <input type="month" id="expFilterMonth" />
+        <button class="btn-secondary" id="clearExpenses">🗑️ 清空本月</button>
+      </div>
+      <table class="expense-table">
+        <thead>
+          <tr>
+            <th>日期</th><th>分类</th><th>金额</th><th>支付方式</th><th>备注</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="expenseTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== 编辑数据弹窗 ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>编辑负债数据 (JSON)</span>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-tip">⚠️ 直接编辑 JSON 数据，保存后立即生效。请确保格式正确。</p>
+      <textarea id="dataEditor" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modalCancel">取消</button>
+      <button class="btn-primary" id="modalSave">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+
+<!-- Service Worker 注册 -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>

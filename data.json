@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "lastUpdated": "2026-06-18",
+    "monthlyIncome": 25000,
+    "currency": "CNY"
+  },
+  "banks": [
+    {
+      "id": "cmb",
+      "name": "招商银行",
+      "shortName": "招商",
+      "color": "#E31837",
+      "icon": "🏦",
+      "accounts": [
+        {
+          "id": "cmb-credit-1",
+          "type": "credit",
+          "name": "招商信用卡",
+          "totalDebt": 45000,
+          "creditLimit": 80000,
+          "billDay": 8,
+          "dueDay": 28,
+          "minPayment": 1350,
+          "interestRate": 0.0005,
+          "installments": [
+            {
+              "id": "cmb-inst-1",
+              "name": "MacBook Pro 分期",
+              "originalAmount": 18000,
+              "remainingAmount": 12000,
+              "monthlyPayment": 1500,
+              "remainingMonths": 8,
+              "startDate": "2025-11-01",
+              "endDate": "2026-06-30"
+            },
+            {
+              "id": "cmb-inst-2",
+              "name": "装修分期",
+              "originalAmount": 30000,
+              "remainingAmount": 20000,
+              "monthlyPayment": 2000,
+              "remainingMonths": 10,
+              "startDate": "2025-09-01",
+              "endDate": "2026-06-30"
+            }
+          ]
+        },
+        {
+          "id": "cmb-loan-1",
+          "type": "loan",
+          "name": "招商闪电贷",
+          "totalDebt": 60000,
+          "monthlyPayment": 3500,
+          "interestRate": 0.0395,
+          "remainingMonths": 18,
+          "dueDay": 15,
+          "startDate": "2025-01-15",
+          "endDate": "2026-07-15"
+        }
+      ]
+    },
+    {
+      "id": "gzbank",
+      "name": "广州银行",
+      "shortName": "广州",
+      "color": "#FF6B35",
+      "icon": "🏛️",
+      "accounts": [
+        {
+          "id": "gz-credit-1",
+          "type": "credit",
+          "name": "广州银行信用卡",
+          "totalDebt": 28000,
+          "creditLimit": 50000,
+          "billDay": 5,
+          "dueDay": 25,
+          "minPayment": 840,
+          "interestRate": 0.0005,
+          "installments": [
+            {
+              "id": "gz-inst-1",
+              "name": "手机分期",
+              "originalAmount": 8000,
+              "remainingAmount": 4000,
+              "monthlyPayment": 800,
+              "remainingMonths": 5,
+              "startDate": "2026-01-01",
+              "endDate": "2026-05-31"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spdb",
+      "name": "浦发银行",
+      "shortName": "浦发",
+      "color": "#0066CC",
+      "icon": "🏢",
+      "accounts": [
+        {
+          "id": "spdb-credit-1",
+          "type": "credit",
+          "name": "浦发信用卡",
+          "totalDebt": 35000,
+          "creditLimit": 60000,
+          "billDay": 12,
+          "dueDay": 2,
+          "minPayment": 1050,
+          "interestRate": 0.0005,
+          "installments": [
+            {
+              "id": "spdb-inst-1",
+              "name": "家电分期",
+              "originalAmount": 15000,
+              "remainingAmount": 9000,
+              "monthlyPayment": 1500,
+              "remainingMonths": 6,
+              "startDate": "2026-01-01",
+              "endDate": "2026-06-30"
+            }
+          ]
+        },
+        {
+          "id": "spdb-loan-1",
+          "type": "loan",
+          "name": "浦发消费贷",
+          "totalDebt": 40000,
+          "monthlyPayment": 2200,
+          "interestRate": 0.0488,
+          "remainingMonths": 20,
+          "dueDay": 10,
+          "startDate": "2025-03-10",
+          "endDate": "2026-11-10"
+        }
+      ]
+    },
+    {
+      "id": "abc",
+      "name": "农业银行",
+      "shortName": "农行",
+      "color": "#008000",
+      "icon": "🌾",
+      "accounts": [
+        {
+          "id": "abc-credit-1",
+          "type": "credit",
+          "name": "农行信用卡",
+          "totalDebt": 22000,
+          "creditLimit": 40000,
+          "billDay": 18,
+          "dueDay": 8,
+          "minPayment": 660,
+          "interestRate": 0.0005,
+          "installments": []
+        },
+        {
+          "id": "abc-loan-1",
+          "type": "loan",
+          "name": "农行惠农贷",
+          "totalDebt": 30000,
+          "monthlyPayment": 1800,
+          "interestRate": 0.0365,
+          "remainingMonths": 17,
+          "dueDay": 20,
+          "startDate": "2025-02-20",
+          "endDate": "2026-07-20"
+        }
+      ]
+    },
+    {
+      "id": "cmbc",
+      "name": "民生银行",
+      "shortName": "民生",
+      "color": "#9B1B30",
+      "icon": "💳",
+      "accounts": [
+        {
+          "id": "cmbc-credit-1",
+          "type": "credit",
+          "name": "民生信用卡",
+          "totalDebt": 18000,
+          "creditLimit": 30000,
+          "billDay": 22,
+          "dueDay": 12,
+          "minPayment": 540,
+          "interestRate": 0.0005,
+          "installments": [
+            {
+              "id": "cmbc-inst-1",
+              "name": "旅游分期",
+              "originalAmount": 12000,
+              "remainingAmount": 6000,
+              "monthlyPayment": 1000,
+              "remainingMonths": 6,
+              "startDate": "2026-01-01",
+              "endDate": "2026-06-30"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "expenses": []
+}
