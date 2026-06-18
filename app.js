@@ -1757,6 +1757,8 @@ function clearAIImage() {
 document.getElementById('aiClearBtn').addEventListener('click', () => {
   aiConversation = [];
   aiChatBubbles  = [];
+  localStorage.removeItem('aiChatBubbles');
+  localStorage.removeItem('aiConversation');
   renderAIChat();
   setAIStatus('');
   clearAIImage();
@@ -1764,10 +1766,61 @@ document.getElementById('aiClearBtn').addEventListener('click', () => {
 });
 
 // ---- 发送 ----
+// 用 pointerdown + preventDefault 阻止手机端键盘收起导致的焦点丢失，确保第一次点击就能发送
+document.getElementById('aiSendBtn').addEventListener('pointerdown', (e) => {
+  e.preventDefault(); // 阻止 blur，保持输入框焦点
+});
 document.getElementById('aiSendBtn').addEventListener('click', handleAISend);
 document.getElementById('aiTextInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAISend(); }
 });
+
+// ---- 语音输入 ----
+(function initVoiceInput() {
+  const btn = document.getElementById('aiVoiceBtn');
+  if (!btn) return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { btn.style.display = 'none'; return; }
+
+  const rec = new SpeechRecognition();
+  rec.lang = 'zh-CN';
+  rec.continuous = false;
+  rec.interimResults = true;
+
+  let listening = false;
+  btn.addEventListener('click', () => {
+    if (listening) { rec.stop(); return; }
+    rec.start();
+  });
+
+  rec.onstart = () => {
+    listening = true;
+    btn.classList.add('listening');
+    btn.title = '录音中，点击停止';
+  };
+  rec.onend = () => {
+    listening = false;
+    btn.classList.remove('listening');
+    btn.title = '语音输入';
+  };
+  rec.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    document.getElementById('aiTextInput').value = transcript;
+    if (e.results[e.results.length - 1].isFinal) {
+      setTimeout(handleAISend, 300); // 最终结果自动发送
+    }
+  };
+  rec.onerror = (e) => {
+    console.warn('语音识别错误:', e.error);
+    btn.classList.remove('listening');
+    listening = false;
+    if (e.error !== 'aborted') showToast('❌ 语音识别失败：' + e.error);
+  };
+})();
+
+// ---- 加载历史对话 ----
+loadAIChatHistory();
+if (aiChatBubbles.length > 0) renderAIChat();
 
 async function handleAISend() {
   const text   = document.getElementById('aiTextInput').value.trim();
@@ -1792,58 +1845,87 @@ async function handleAISend() {
   document.getElementById('aiTextInput').value = '';
 
   try {
-    let userMsgForMain = text; // 最终加入主线的文字内容
-
-    // 如果有图片：先用 LongCat-VL 单独识别，把结果转成文字合并进主线
+    // ===== 图片路径：VL 直接返回 JSON 数组，批量展示 =====
     if (hasImg) {
-      setAIStatus('图片识别中...', 'loading');
-      // 先推一个"识别中"占位气泡，显示打点动画
+      setAIStatus('图片识别中（LongCat-VL）...', 'loading');
       aiChatBubbles.push({ role: 'ai', text: '⏳ 图片识别中', parsed: null, streaming: true });
       renderAIChat();
-      const vlResult = await callVLModel(text, { base64: savedBase64, mime: savedMime });
-      // 识别完成，清空图片预览并移除占位气泡
+
+      const vlRaw = await callVLModel(text, { base64: savedBase64, mime: savedMime });
       clearAIImage();
-      aiChatBubbles.pop();
-      userMsgForMain = `[图片识别结果] ${vlResult}\n${text ? '用户补充：' + text : ''}`.trim();
-    }
+      aiChatBubbles.pop(); // 移除占位气泡
 
-    // 加入主线对话历史
-    aiConversation.push({ role: 'user', content: userMsgForMain });
-
-    // 推一个空的流式气泡，流式输出时实时更新
-    setAIStatus('AI 思考中...', 'loading');
-    const streamBubble = { role: 'ai', text: '', parsed: null, streaming: true };
-    aiChatBubbles.push(streamBubble);
-    renderAIChat();
-
-    // 流式调用主线模型
-    const raw = await callMainModel(aiConversation, (partialText) => {
-      streamBubble.text = partialText;
-      // 实时更新最后一个气泡的文字，不重绘整个列表（性能优化）
-      const el = document.getElementById('aiChatHistory');
-      const bubbles = el.querySelectorAll('.ai-bubble-ai');
-      const last = bubbles[bubbles.length - 1];
-      if (last) {
-        const span = last.querySelector('span');
-        if (span) span.textContent = partialText;
+      // 解析 VL 返回的 JSON 数组
+      let items = [];
+      try {
+        const cleaned = vlRaw.trim()
+          .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(cleaned);
+        items = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        const m = vlRaw.match(/\[[\s\S]*\]/);
+        if (m) { try { items = JSON.parse(m[0]); } catch {} }
       }
-      el.scrollTop = el.scrollHeight;
-    });
 
-    // 流结束，标记非流式状态
-    streamBubble.streaming = false;
-    streamBubble.text = raw;
+      if (items.length === 0) {
+        aiChatBubbles.push({ role: 'ai', text: '❌ 未能识别到消费记录，请重试或手动描述', parsed: null });
+        renderAIChat();
+        setAIStatus('识别失败', 'error');
+      } else {
+        // 补全默认值
+        const todayStr = dayjs().format('YYYY-MM-DD');
+        items = items.map(it => ({
+          intent: 'add_expense',
+          date:     it.date     || todayStr,
+          amount:   parseFloat(it.amount) || 0,
+          category: it.category || '其他',
+          payment:  it.payment  || '微信/支付宝',
+          note:     it.note     || '',
+        }));
+        // 批量气泡：一个汇总气泡 + 每条独立卡片
+        aiChatBubbles.push({
+          role: 'ai', text: '', parsed: null,
+          batchSummary: `📋 共识别到 ${items.length} 笔消费，请逐条确认或跳过：`
+        });
+        items.forEach(item => {
+          aiChatBubbles.push({ role: 'ai', text: '', parsed: item, batchItem: true });
+        });
+        renderAIChat();
+        setAIStatus(`✅ 识别到 ${items.length} 笔，请逐条确认`, 'success');
+        saveAIChatHistory();
+      }
 
-    // 把 AI 回复加入主线历史
-    aiConversation.push({ role: 'assistant', content: raw });
+    } else {
+      // ===== 纯文字路径：走主线流式模型 =====
+      aiConversation.push({ role: 'user', content: text });
 
-    // 解析 JSON，重新渲染最终气泡（带确认按钮等）
-    const parsed = parseAIResult(raw);
-    streamBubble.parsed = parsed;
-    renderAIChat();
+      setAIStatus('AI 思考中...', 'loading');
+      const streamBubble = { role: 'ai', text: '', parsed: null, streaming: true };
+      aiChatBubbles.push(streamBubble);
+      renderAIChat();
 
-    // 根据意图执行操作
-    await handleAIIntent(parsed);
+      const raw = await callMainModel(aiConversation, (partialText) => {
+        streamBubble.text = partialText;
+        const el = document.getElementById('aiChatHistory');
+        const bubbles = el.querySelectorAll('.ai-bubble-ai');
+        const last = bubbles[bubbles.length - 1];
+        if (last) {
+          const span = last.querySelector('span');
+          if (span) span.textContent = partialText;
+        }
+        el.scrollTop = el.scrollHeight;
+      });
+
+      streamBubble.streaming = false;
+      streamBubble.text = raw;
+      aiConversation.push({ role: 'assistant', content: raw });
+
+      const parsed = parseAIResult(raw);
+      streamBubble.parsed = parsed;
+      renderAIChat();
+      await handleAIIntent(parsed);
+      saveAIChatHistory();
+    }
 
   } catch (err) {
     console.error('[AI]', err);
@@ -1858,13 +1940,17 @@ async function handleAISend() {
   }
 }
 
-// 调用 LongCat-VL 识别图片，返回文字描述（不保留上下文）
+// 调用 LongCat-VL 识别图片，直接返回 JSON 数组（所有消费条目）
 async function callVLModel(text, image) {
+  const today = dayjs().format('YYYY-MM-DD');
+  const prompt = `请识别图中所有消费记录，${text ? '结合用户说明："' + text + '"，' : ''}直接返回 JSON 数组，不要任何解释文字。
+格式：[{"date":"YYYY-MM-DD","amount":数字,"category":"分类","payment":"支付方式","note":"备注"}, ...]
+category 只能是：餐饮堂食、外卖、买菜生鲜、烟酒零食、交通出行、购物数码、购物服装、日用百货、娱乐休闲、订阅会员、医疗健康、教育学习、居家大件、转账还款、宠物、其他
+payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、花呗、美团月付、微信/支付宝、现金
+日期如图中未显示则用今天 ${today}，金额为正数（收入/退款用负数）。只返回 JSON 数组，不要 markdown 代码块。`;
   const userContent = [
     { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.base64}` } },
-    { type: 'text', text: text
-        ? `请识别图中的消费信息，并结合用户说明"${text}"，用文字描述消费的日期、金额、商家/分类、支付方式。`
-        : '请识别图中的消费信息，用文字描述消费的日期、金额、商家/分类、支付方式。' },
+    { type: 'text', text: prompt },
   ];
   // VL 模型使用专用接口和 max_new_tokens 参数
   const resp = await fetch(FRIDAY_VL_API, {
@@ -2117,6 +2203,10 @@ function renderAIChat() {
         ? `<span>${escHtml(b.text)}</span>` : '';
       return `<div class="ai-bubble ai-bubble-user">${imgHtml}${txt}</div>`;
     } else {
+      // 批量汇总提示气泡
+      if (b.batchSummary) {
+        return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.batchSummary)}</span></div>`;
+      }
       if (!b.parsed) {
         const streamingDots = b.streaming ? `<span class="ai-typing-dots"><span>.</span><span>.</span><span>.</span></span>` : '';
         return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span>${streamingDots}</div>`;
@@ -2126,6 +2216,43 @@ function renderAIChat() {
 
       if (intent === 'add_expense') {
         const bubbleIdx = idx;
+        // 批量条目：已录入则显示已完成状态，否则显示确认+跳过
+        if (b.batchItem) {
+          if (b.confirmed) {
+            return `<div class="ai-bubble ai-bubble-ai ai-batch-done">
+              <div class="ai-intent-tag">✅ 已录入</div>
+              <div class="ai-parsed-card">
+                <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
+                <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${p.category}</strong></div>
+                ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+              </div>
+            </div>`;
+          }
+          if (b.skipped) {
+            return `<div class="ai-bubble ai-bubble-ai ai-batch-done" style="opacity:0.45">
+              <div class="ai-intent-tag">⏭️ 已跳过</div>
+              <div class="ai-parsed-card">
+                <div class="ai-parsed-row"><span>💰 金额</span><strong>¥${p.amount}</strong></div>
+                ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+              </div>
+            </div>`;
+          }
+          return `<div class="ai-bubble ai-bubble-ai">
+            <div class="ai-intent-tag">🛒 录入消费</div>
+            <div class="ai-parsed-card">
+              <div class="ai-parsed-row"><span>📅 日期</span><strong>${p.date}</strong></div>
+              <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
+              <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${p.category}</strong></div>
+              <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
+              ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+            </div>
+            <div class="ai-batch-actions">
+              <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入</button>
+              <button class="ai-skip-btn" onclick="skipBatchItem(${bubbleIdx})">⏭️ 跳过</button>
+            </div>
+          </div>`;
+        }
+        // 单条（文字输入路径）
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
           <div class="ai-parsed-card">
@@ -2135,7 +2262,7 @@ function renderAIChat() {
             <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
             ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
           </div>
-          <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed)">✅ 确认录入消费</button>
+          <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入消费</button>
           <div class="ai-bubble-hint">如有误请继续说明修正</div>
         </div>`;
 
@@ -2200,8 +2327,8 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// AI 识别消费后直接录入（消费页已无手动表单）
-async function addExpenseFromAI(data) {
+// AI 识别消费后直接录入（支持 bubbleIdx 标记已确认）
+async function addExpenseFromAI(data, bubbleIdx) {
   if (!data || !data.amount || data.amount <= 0) {
     showToast('❌ 金额无效，请重新描述');
     return;
@@ -2230,11 +2357,63 @@ async function addExpenseFromAI(data) {
   renderExpenseOverview();
   const billTip = billing ? `\n📋 计入 ${billing.billMonth} 账单，还款日 ${billing.dueDate.format('M月D日')}` : '';
   showToast(`✅ 已录入 ${data.payment} 消费 ¥${data.amount}${billTip}`);
+  // 标记气泡为已确认
+  if (bubbleIdx !== undefined && aiChatBubbles[bubbleIdx]) {
+    aiChatBubbles[bubbleIdx].confirmed = true;
+    renderAIChat();
+    saveAIChatHistory();
+  }
+}
+
+// 跳过批量条目
+function skipBatchItem(bubbleIdx) {
+  if (aiChatBubbles[bubbleIdx]) {
+    aiChatBubbles[bubbleIdx].skipped = true;
+    renderAIChat();
+    saveAIChatHistory();
+  }
+}
+
+// ===== 对话历史持久化 =====
+function saveAIChatHistory() {
+  try {
+    // 只保存可序列化的字段（去掉 imgSrc 大图，保留缩略标记）
+    const toSave = aiChatBubbles.map(b => ({
+      role: b.role,
+      text: b.text,
+      parsed: b.parsed,
+      batchSummary: b.batchSummary,
+      batchItem: b.batchItem,
+      confirmed: b.confirmed,
+      skipped: b.skipped,
+      // imgSrc 可能很大，只保留有无标记
+      hasImg: !!b.imgSrc,
+    }));
+    localStorage.setItem('aiChatBubbles', JSON.stringify(toSave));
+    localStorage.setItem('aiConversation', JSON.stringify(aiConversation));
+  } catch (e) {
+    console.warn('保存对话历史失败:', e);
+  }
+}
+
+function loadAIChatHistory() {
+  try {
+    const bubbles = localStorage.getItem('aiChatBubbles');
+    const conv    = localStorage.getItem('aiConversation');
+    if (bubbles) {
+      aiChatBubbles = JSON.parse(bubbles).map(b => ({
+        ...b,
+        imgSrc: b.hasImg ? null : undefined, // 图片不恢复，只保留文字
+      }));
+    }
+    if (conv) aiConversation = JSON.parse(conv);
+  } catch (e) {
+    console.warn('加载对话历史失败:', e);
+  }
 }
 
 // 兼容旧调用（保留函数名）
 function fillExpenseForm(data) {
-  // 消费页已无表单，直接录入
   addExpenseFromAI(data);
 }
 
