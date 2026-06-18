@@ -1674,10 +1674,10 @@ function schedulePaymentReminders() {
 }
 
 // ===== AI 消费识别（多轮对话版）=====
-const FRIDAY_API    = 'https://aigc.sankuai.com/v1/chat/completions';         // 文字模型接口
-const FRIDAY_VL_API = 'https://aigc.sankuai.com/v1/openai/native/chat/completions'; // VL 多模态接口
+const FRIDAY_API    = 'https://aigc.sankuai.com/v1/openai/native/chat/completions'; // 统一用 native 接口
+const FRIDAY_VL_API = 'https://aigc.sankuai.com/v1/openai/native/chat/completions'; // VL 多模态接口（同上）
 const FRIDAY_TOKEN = '22041715054660149263';
-const MODEL_TEXT   = 'deepseek-v4-flash';  // 主线对话（纯文字，保持上下文）
+const MODEL_TEXT   = 'LongCat-Flash-Chat'; // 主线对话（纯文字，保持上下文）
 const MODEL_VL     = 'LongCat-VL-Medium';  // 图片识别（单次调用，结果合并回主线）
 
 const AI_SYSTEM_PROMPT = `你是一个个人负债与消费管理助手，能识别用户意图并返回结构化 JSON。
@@ -1886,7 +1886,7 @@ async function fridayRequest(model, messages, maxTokens = 300) {
       'Content-Type':  'application/json',
       'Authorization': `Bearer ${FRIDAY_TOKEN}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.1 }),
+    body: JSON.stringify({ model, messages, max_new_tokens: maxTokens, temperature: 0.1 }),
   });
   if (!resp.ok) {
     const t = await resp.text();
