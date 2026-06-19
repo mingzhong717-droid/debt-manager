@@ -1913,18 +1913,31 @@ function renderExpenseOverview() {
     cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, cycleStart, cycleEnd };
   });
 
+  // 与 renderBillingStatus 一致：cardId精确匹配 OR payment名称匹配（兜底手工录入）
+  const BANK_SHORT_MAP_OV = { 'abc-credit-1': '农行' };
   expenses.forEach(e => {
     if (!e.date) return;
-    const cardId = e.cardId;
-    if (!cardStats[cardId]) return;
-    const { cycleStart, cycleEnd } = cardStats[cardId];
     const d = dayjs(e.date);
-    if (d.isBefore(cycleStart) || d.isAfter(cycleEnd)) return;
+    // 找到这条消费属于哪张卡
+    let matchedCardId = null;
+    for (const [cardId, stat] of Object.entries(cardStats)) {
+      const cfg = CARD_BILLING[cardId];
+      const cardName = cfg.name;
+      const bankShort = BANK_SHORT_MAP_OV[cardId] || cardName.replace('信用卡','').replace('银行','');
+      const cardMatch = e.cardId === cardId ||
+        (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
+      if (!cardMatch) continue;
+      const { cycleStart, cycleEnd } = stat;
+      if (d.isBefore(cycleStart) || d.isAfter(cycleEnd)) continue;
+      matchedCardId = cardId;
+      break;
+    }
+    if (!matchedCardId) return;
     if (e.amount < 0) {
-      cardStats[cardId].refund += Math.abs(e.amount);
+      cardStats[matchedCardId].refund += Math.abs(e.amount);
     } else {
-      cardStats[cardId].total += e.amount;
-      cardStats[cardId].count++;
+      cardStats[matchedCardId].total += e.amount;
+      cardStats[matchedCardId].count++;
     }
   });
 
