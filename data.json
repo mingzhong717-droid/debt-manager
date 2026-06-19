@@ -1089,7 +1089,7 @@
       "id": "ab10f28a-e243-414a-b4e1-84796ff5abd3",
       "date": "2026-06-12",
       "amount": -200.0,
-      "category": "转账还款",
+      "category": "退款",
       "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
       "note": "财付通-平昌县宏达云眠酒店[退款]"

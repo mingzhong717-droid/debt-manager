@@ -352,34 +352,56 @@ function init() {
 }
 
 // ===== 获取未出账消费总额 =====
-function getUnpaidTotal(cardId) {
+// ===== 公共：计算指定卡的当前账单周期日期范围 =====
+// 返回 { cycleStart, cycleEnd }，均为 dayjs 对象
+// 规则：账单日当天的消费归入下一期（未出账）
+function getBillingCycleDates(cardId) {
   const cfg = CARD_BILLING[cardId];
-  if (!cfg) return 0;
-  const expenses = getExpenses();
+  if (!cfg) return null;
   const now = today;
-
-  // 当前账单周期：账单日当天(含) ~ 下个账单日前一天(含)
-  // 信用卡账单日当天的消费归入下一期账单（即当前未出账）
   let cycleStart, cycleEnd;
   if (now.date() < cfg.billDay) {
-    // 今天在账单日之前，当前周期是上月账单日 ~ 本月账单日前一天
     cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
     cycleEnd = now.date(cfg.billDay - 1).endOf('day');
   } else {
-    // 今天 >= 账单日，当前周期是本月账单日 ~ 下月账单日前一天
     cycleStart = now.date(cfg.billDay).startOf('day');
     cycleEnd = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
   }
+  return { cycleStart, cycleEnd };
+}
+
+// ===== 公共：判断日期是否在周期内（含两端）=====
+function isDateInCycle(dateStr, cycleStart, cycleEnd) {
+  const d = dayjs(dateStr);
+  return (d.isSame(cycleStart, 'day') || d.isAfter(cycleStart)) &&
+         (d.isSame(cycleEnd, 'day') || d.isBefore(cycleEnd));
+}
+
+// ===== 公共：判断消费是否属于"主动还款"（不应计入未出账）=====
+// 主动还款特征：category 含"还款" 且 note 不含"[退款]"/"退款"
+function isRepayment(expense) {
+  const cat = expense.category || '';
+  const note = expense.note || '';
+  if (!cat.includes('还款')) return false;
+  // 如果备注里有"退款"字样，说明是商家退款，不是主动还款
+  return !note.includes('退款');
+}
+
+function getUnpaidTotal(cardId) {
+  const cycle = getBillingCycleDates(cardId);
+  if (!cycle) return 0;
+  const { cycleStart, cycleEnd } = cycle;
+  const expenses = getExpenses();
+  const cfg = CARD_BILLING[cardId];
 
   const cardName = cfg.name;
   const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
   const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', '');
 
   const unpaidExpenses = expenses.filter(e => {
-    const d = dayjs(e.date);
-    const dateOk = (d.isSame(cycleStart, 'day') || d.isAfter(cycleStart)) &&
-                   (d.isSame(cycleEnd, 'day') || d.isBefore(cycleEnd));
-    if (!dateOk) return false;
+    // 排除主动还款记录
+    if (isRepayment(e)) return false;
+    if (!isDateInCycle(e.date, cycleStart, cycleEnd)) return false;
     return e.cardId === cardId ||
            (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
   });
@@ -1539,6 +1561,19 @@ function addExpense() {
     return;
   }
 
+  // 拦截主动还款：还款应该更新 paidAmount 而非录入消费
+  if (isRepayment({ category, note })) {
+    alert('⚠️ 检测到这是一笔"还款"记录。\n\n还款不应录入消费列表，请到对应信用卡的"已还金额"中更新。\n如果是商家退款，请将分类改为"退款"而非"转账还款"。');
+    return;
+  }
+
+  // 重复检测（同日+同金额+同支付方式）
+  const existing = getExpenses();
+  const dup = existing.find(e => e.date === date && Math.abs(e.amount - amount) < 0.01 && e.payment === payment);
+  if (dup) {
+    if (!confirm(`⚠️ 疑似重复录入\n\n已存在：${date} ¥${amount} ${payment}\n\n确定继续录入？`)) return;
+  }
+
   // 套现/大额提醒
   if (checkCashAdvance(amount, note, payment)) {
     const confirmed = confirm(
@@ -1976,25 +2011,18 @@ function renderExpenseOverview() {
   const now = today;
 
   // 方案B：按账单周期统计"当前未出账单"消费
-  // 每张卡独立计算本周期（上个账单日+1 ~ 本账单日），与 renderBillingStatus 逻辑一致
   const cardStats = {};
   Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
-    let cycleStart, cycleEnd;
-    if (now.date() < cfg.billDay) {
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
-      cycleEnd   = now.date(cfg.billDay - 1).endOf('day');
-    } else {
-      cycleStart = now.date(cfg.billDay).startOf('day');
-      cycleEnd   = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
-    }
-    cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, cycleStart, cycleEnd };
+    const cycle = getBillingCycleDates(cardId);
+    if (!cycle) return;
+    cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, ...cycle };
   });
 
   // 与 renderBillingStatus 一致：cardId精确匹配 OR payment名称匹配（兜底手工录入）
   const BANK_SHORT_MAP_OV = { 'abc-credit-1': '农行' };
   expenses.forEach(e => {
     if (!e.date) return;
-    const d = dayjs(e.date);
+    if (isRepayment(e)) return; // 排除主动还款
     // 找到这条消费属于哪张卡
     let matchedCardId = null;
     for (const [cardId, stat] of Object.entries(cardStats)) {
@@ -2005,7 +2033,7 @@ function renderExpenseOverview() {
         (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
       if (!cardMatch) continue;
       const { cycleStart, cycleEnd } = stat;
-      if (d.isBefore(cycleStart) || d.isAfter(cycleEnd)) continue;
+      if (!isDateInCycle(e.date, cycleStart, cycleEnd)) continue;
       matchedCardId = cardId;
       break;
     }
@@ -2023,6 +2051,11 @@ function renderExpenseOverview() {
   const grandRefund = Object.values(cardStats).reduce((s, c) => s + c.refund, 0);
   const grandNet = grandTotal - grandRefund;
 
+  // 未出账为负数时显示数据异常告警
+  const negWarning = grandNet < 0
+    ? `<div class="exp-ov-warning" style="color:var(--danger);font-size:12px;margin-top:4px">⚠️ 未出账净值为负，可能有还款记录被误录入消费列表，请检查</div>`
+    : '';
+
   let html = `
     <div class="exp-overview-header">
       <div class="exp-overview-total">
@@ -2030,6 +2063,7 @@ function renderExpenseOverview() {
         <span class="exp-ov-amount">${fmt(grandNet)}</span>
       </div>
       ${grandRefund > 0 ? `<div class="exp-ov-refund">退款 ${fmt(grandRefund)}</div>` : ''}
+      ${negWarning}
     </div>
     <div class="exp-overview-cards">`;
 
@@ -2081,27 +2115,18 @@ function renderBillingStatus() {
     DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === cardId) accData = a; }));
     if (!accData) return;
 
-    // 当前账单周期：账单日当天(含) ~ 下个账单日前一天(含)
-    let cycleStart, cycleEnd;
-    if (now.date() < cfg.billDay) {
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
-      cycleEnd = now.date(cfg.billDay - 1).endOf('day');
-    } else {
-      cycleStart = now.date(cfg.billDay).startOf('day');
-      cycleEnd = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
-    }
+    // 当前账单周期
+    const cycle = getBillingCycleDates(cardId);
+    if (!cycle) return;
+    const { cycleStart, cycleEnd } = cycle;
 
-    // 本周期内的消费（未出账）
-    // 兜底：cardId匹配 OR payment名称包含银行简称（防止AI录入时名称不完全一致）
-    const cardName = cfg.name; // 如"广州银行信用卡"
-    // 特殊处理：农业银行简称是"农行"而非"农业"
+    // 本周期内的消费（未出账），排除主动还款
+    const cardName = cfg.name;
     const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
-    const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', ''); // 如"广州"
+    const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', '');
     const unpaidExpenseList = expenses.filter(e => {
-      const d = dayjs(e.date);
-      const dateOk = (d.isSame(cycleStart, 'day') || d.isAfter(cycleStart)) &&
-                     (d.isSame(cycleEnd, 'day') || d.isBefore(cycleEnd));
-      if (!dateOk) return false;
+      if (isRepayment(e)) return false;
+      if (!isDateInCycle(e.date, cycleStart, cycleEnd)) return false;
       return e.cardId === cardId ||
              (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
     });
@@ -3078,10 +3103,16 @@ if (!data || !data.amount || data.amount === 0) {
 showToast('❌ 金额无效，请重新描述');
 return;
 }
-// 重复检测提醒
+// 拦截主动还款
+if (isRepayment({ category: data.category, note: data.note })) {
+showToast('⚠️ 检测到还款记录，已跳过。还款请更新"已还金额"，商家退款请分类为"退款"');
+return;
+}
+// 重复检测提醒（改为拦截，不再仅提示）
 const dup = checkDuplicateExpense(data, bubbleIdx);
 if (dup) {
-showToast(`⚠️ 疑似重复：${data.date} ¥${data.amount} ${data.payment} 可能已录入，请注意检查`);
+showToast(`⚠️ 重复录入已拦截：${data.date} ¥${data.amount} ${data.payment} 已存在`);
+return;
 }
 const cardId = PAYMENT_TO_CARD[data.payment];
   const billing = cardId ? getBillingCycle(cardId, data.date) : null;
