@@ -1549,6 +1549,45 @@ input:focus, select:focus, textarea:focus {
 .ai-skip-btn:hover { background: #e9ecf5; color: var(--text); }
 .ai-batch-done .ai-intent-tag { opacity: 0.7; }
 .ai-batch-done .ai-parsed-card { opacity: 0.6; }
+.ai-edit-btn {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  background: #f0f4ff;
+  border: 1.5px solid #d0d8f0;
+  border-radius: 10px;
+  color: #4a6cf7;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.ai-edit-btn:hover { background: #dce4ff; }
+.ai-edit-card { gap: 8px; }
+.ai-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-edit-row label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.ai-edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid #e2e6f0;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color var(--transition);
+  box-sizing: border-box;
+}
+.ai-edit-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
 .ai-input-row {
   display: flex;
   gap: 8px;

@@ -2909,33 +2909,31 @@ function renderAIChat() {
               </div>
             </div>`;
           }
+          // 编辑模式
+          if (b.editing) {
+            return renderExpenseEditCard(p, bubbleIdx, true);
+          }
           return `<div class="ai-bubble ai-bubble-ai">
             <div class="ai-intent-tag">🛒 录入消费</div>
-            <div class="ai-parsed-card">
-              <div class="ai-parsed-row"><span>📅 日期</span><strong>${p.date}</strong></div>
-              <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
-              <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${p.category}</strong></div>
-              <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
-              ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
-            </div>
+            ${renderExpenseDisplayCard(p)}
             <div class="ai-batch-actions">
               <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入</button>
+              <button class="ai-edit-btn" onclick="editBatchItem(${bubbleIdx})">✏️ 编辑</button>
               <button class="ai-skip-btn" onclick="skipBatchItem(${bubbleIdx})">⏭️ 跳过</button>
             </div>
           </div>`;
         }
         // 单条（文字输入路径）
+        if (b.editing) {
+          return renderExpenseEditCard(p, bubbleIdx, false);
+        }
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
-          <div class="ai-parsed-card">
-            <div class="ai-parsed-row"><span>📅 日期</span><strong>${p.date}</strong></div>
-            <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
-            <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${p.category}</strong></div>
-            <div class="ai-parsed-row"><span>💳 支付</span><strong>${p.payment}</strong></div>
-            ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+          ${renderExpenseDisplayCard(p)}
+          <div class="ai-batch-actions">
+            <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入</button>
+            <button class="ai-edit-btn" onclick="editBatchItem(${bubbleIdx})">✏️ 编辑</button>
           </div>
-          <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入消费</button>
-          <div class="ai-bubble-hint">如有误请继续说明修正</div>
         </div>`;
 
       } else if (intent === 'add_loan') {
@@ -3046,6 +3044,87 @@ function skipBatchItem(bubbleIdx) {
   }
 }
 
+// ===== AI解析消费卡片：展示 / 编辑 =====
+function renderExpenseDisplayCard(p) {
+  const rows = [
+    `<div class="ai-parsed-row"><span>📅 日期</span><strong>${escHtml(p.date || '-')}</strong></div>`,
+    `<div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>`,
+    `<div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${escHtml(p.category || '其他')}</strong></div>`,
+    `<div class="ai-parsed-row"><span>💳 支付</span><strong>${escHtml(p.payment || '微信/支付宝')}</strong></div>`,
+  ];
+  if (p.note) rows.push(`<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>`);
+  return `<div class="ai-parsed-card">${rows.join('')}</div>`;
+}
+
+function renderExpenseEditCard(p, bubbleIdx, isBatch) {
+  const categories = ['餐饮堂食','外卖','买菜生鲜','烟酒零食','交通出行','购物数码','购物服装','日用百货','娱乐休闲','订阅会员','医疗健康','教育学习','居家大件','转账还款','宠物','其他'];
+  const payments = ['招商信用卡','广州银行信用卡','浦发信用卡','农行信用卡','民生信用卡','花呗','美团月付','微信/支付宝','现金'];
+  const today = dayjs().format('YYYY-MM-DD');
+  const dateVal = p.date || today;
+  const catOpts = categories.map(c => `<option value="${c}" ${c === (p.category||'') ? 'selected':''}>${c}</option>`).join('');
+  const payOpts = payments.map(pm => `<option value="${pm}" ${pm === (p.payment||'') ? 'selected':''}>${pm}</option>`).join('');
+  return `<div class="ai-bubble ai-bubble-ai">
+    <div class="ai-intent-tag">✏️ 编辑消费</div>
+    <div class="ai-parsed-card ai-edit-card">
+      <div class="ai-edit-row">
+        <label>📅 日期</label>
+        <input type="date" class="ai-edit-input" id="edit-date-${bubbleIdx}" value="${dateVal}">
+      </div>
+      <div class="ai-edit-row">
+        <label>💰 金额</label>
+        <input type="number" class="ai-edit-input" id="edit-amount-${bubbleIdx}" value="${p.amount||''}" step="0.01" min="0">
+      </div>
+      <div class="ai-edit-row">
+        <label>🏷️ 分类</label>
+        <select class="ai-edit-input" id="edit-category-${bubbleIdx}">${catOpts}</select>
+      </div>
+      <div class="ai-edit-row">
+        <label>💳 支付</label>
+        <select class="ai-edit-input" id="edit-payment-${bubbleIdx}">${payOpts}</select>
+      </div>
+      <div class="ai-edit-row">
+        <label>📝 备注</label>
+        <input type="text" class="ai-edit-input" id="edit-note-${bubbleIdx}" value="${escHtml(p.note||'')}" placeholder="可选">
+      </div>
+    </div>
+    <div class="ai-batch-actions">
+      <button class="ai-confirm-btn" onclick="saveBatchEdit(${bubbleIdx})">💾 保存</button>
+      <button class="ai-skip-btn" onclick="cancelBatchEdit(${bubbleIdx})">↩️ 取消</button>
+    </div>
+  </div>`;
+}
+
+function editBatchItem(bubbleIdx) {
+  if (aiChatBubbles[bubbleIdx]) {
+    aiChatBubbles[bubbleIdx].editing = true;
+    renderAIChat();
+  }
+}
+
+function saveBatchEdit(bubbleIdx) {
+  const b = aiChatBubbles[bubbleIdx];
+  if (!b) return;
+  const date = document.getElementById(`edit-date-${bubbleIdx}`)?.value;
+  const amount = parseFloat(document.getElementById(`edit-amount-${bubbleIdx}`)?.value);
+  const category = document.getElementById(`edit-category-${bubbleIdx}`)?.value;
+  const payment = document.getElementById(`edit-payment-${bubbleIdx}`)?.value;
+  const note = document.getElementById(`edit-note-${bubbleIdx}`)?.value;
+  if (!amount || amount <= 0) { showToast('❌ 金额无效'); return; }
+  if (!date) { showToast('❌ 日期无效'); return; }
+  b.parsed = { ...b.parsed, date, amount, category, payment, note: note || '' };
+  b.editing = false;
+  renderAIChat();
+  saveAIChatHistory();
+  showToast('✅ 已修改，请确认录入');
+}
+
+function cancelBatchEdit(bubbleIdx) {
+  if (aiChatBubbles[bubbleIdx]) {
+    aiChatBubbles[bubbleIdx].editing = false;
+    renderAIChat();
+  }
+}
+
 // ===== 对话历史持久化 =====
 function saveAIChatHistory() {
   try {
@@ -3058,6 +3137,7 @@ function saveAIChatHistory() {
       batchItem: b.batchItem,
       confirmed: b.confirmed,
       skipped: b.skipped,
+      editing: false, // 不持久化编辑状态，重新加载时退出编辑
       // imgSrc 可能很大，只保留有无标记
       hasImg: !!b.imgSrc,
     }));
@@ -3075,6 +3155,7 @@ function loadAIChatHistory() {
     if (bubbles) {
       aiChatBubbles = JSON.parse(bubbles).map(b => ({
         ...b,
+        editing: false, // 加载时退出编辑模式
         imgSrc: b.hasImg ? null : undefined, // 图片不恢复，只保留文字
       }));
     }
