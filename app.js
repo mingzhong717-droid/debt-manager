@@ -294,7 +294,11 @@ async function flushPendingSaves() {
         });
         console.log('[Retry] debt 重试成功');
       } else if (item.type === 'expense') {
-        const rows = item.data.map(e => ({ ...e, month: e.date.slice(0, 7) }));
+        const rows = item.data.map(e => ({
+          id: e.id, date: e.date, amount: e.amount,
+          category: e.category, payment: e.payment,
+          note: e.note || '', month: e.date.slice(0, 7)
+        }));
         await sbFetch(EXPENSE_TABLE + '?on_conflict=id', {
           method: 'POST',
           prefer: 'resolution=merge-duplicates,return=minimal',
@@ -1300,9 +1304,19 @@ async function saveExpenses(expenses) {
   await idbSave('expenses', expenses);
 
   // 2. upsert 到云端
+  // 注意：只上传表中存在的字段（id/date/amount/category/payment/note/month）
+  // cardId/billMonth/dueDate/isCashAdvance 是本地计算字段，不在云端表结构中
   try {
     if (expenses.length > 0) {
-      const rows = expenses.map(e => ({ ...e, month: e.date.slice(0, 7) }));
+      const rows = expenses.map(e => ({
+        id: e.id,
+        date: e.date,
+        amount: e.amount,
+        category: e.category,
+        payment: e.payment,
+        note: e.note || '',
+        month: e.date.slice(0, 7)
+      }));
       await sbFetch(EXPENSE_TABLE + '?on_conflict=id', {
         method: 'POST',
         prefer: 'resolution=merge-duplicates,return=minimal',
