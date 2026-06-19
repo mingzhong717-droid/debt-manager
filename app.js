@@ -965,6 +965,13 @@ function renderInstallments() {
       // 生成还款计划：优先用 data.json 里的精确字段，没有时才推算
       const principalPerMonth = inst.principalPerMonth || (inst.originalAmount / totalMonths);
       const interestPerMonth = inst.interestPerMonth !== undefined ? inst.interestPerMonth : (inst.monthlyPayment - principalPerMonth);
+      // 剩余本金/利息：优先用精确字段，否则用 remainingMonths × perMonth 推算
+      const remainingPrincipal = inst.remainingPrincipal != null
+        ? inst.remainingPrincipal
+        : Math.round(principalPerMonth * monthsLeft * 100) / 100;
+      const remainingInterest = inst.remainingInterest != null
+        ? inst.remainingInterest
+        : Math.round(interestPerMonth * monthsLeft * 100) / 100;
       let scheduleHTML = '';
       for (let i = 0; i < totalMonths; i++) {
         const periodDate = startDate.add(i, 'month');
@@ -1017,8 +1024,12 @@ function renderInstallments() {
               <span class="inst-meta-value">${fmt(inst.originalAmount)}</span>
             </div>
             <div class="inst-meta-item">
-              <span class="inst-meta-label">剩余金额</span>
-              <span class="inst-meta-value" style="color:var(--warning)">${fmt(inst.remainingAmount)}</span>
+              <span class="inst-meta-label">剩余本金</span>
+              <span class="inst-meta-value" style="color:var(--warning)">${fmt(remainingPrincipal)}</span>
+            </div>
+            <div class="inst-meta-item">
+              <span class="inst-meta-label">剩余利息</span>
+              <span class="inst-meta-value" style="color:var(--text-muted)">${fmt(remainingInterest)}</span>
             </div>
             <div class="inst-meta-item">
               <span class="inst-meta-label">月供</span>
