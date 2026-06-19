@@ -2020,15 +2020,23 @@ function renderBillingStatus() {
     // 特殊处理：农业银行简称是"农行"而非"农业"
     const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
     const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', ''); // 如"广州"
-    const unpaidExpenses = expenses.filter(e => {
+    const unpaidExpenseList = expenses.filter(e => {
       const dateOk = dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
                      dayjs(e.date).isBefore(cycleEnd.add(1, 'day'));
       if (!dateOk) return false;
-      // 优先cardId精确匹配，其次payment名称模糊匹配
       return e.cardId === cardId ||
              (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
     });
-    const unpaidTotal = unpaidExpenses.reduce((s, e) => s + e.amount, 0);
+    const unpaidTotal = unpaidExpenseList.reduce((s, e) => s + e.amount, 0);
+
+    // 已出账单期间的消费明细
+    const billedExpenseList = (billStart && billEnd) ? expenses.filter(e => {
+      const d = dayjs(e.date);
+      const dateOk = d.isAfter(billStart.subtract(1, 'day')) && d.isBefore(billEnd.add(1, 'day'));
+      if (!dateOk) return false;
+      return e.cardId === cardId ||
+             (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
+    }).sort((a, b) => dayjs(b.date).diff(dayjs(a.date))) : [];
 
     // 下次还款日：优先读 data.json 里的 currentDueDate（真实数据），避免推算错误
     let dueDate = null;
@@ -2045,23 +2053,28 @@ function renderBillingStatus() {
     const billStart = accData.currentBillStart ? dayjs(accData.currentBillStart) : null;
     const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
 
-    console.log('[BillingStatus]', cardId, {
-      billStart: billStart?.format('YYYY-MM-DD'),
-      billEnd: billEnd?.format('YYYY-MM-DD'),
-      minPayment: accData.minPayment,
-      cycleStart: cycleStart.format('YYYY-MM-DD'),
-      cycleEnd: cycleEnd.format('YYYY-MM-DD'),
-      unpaidTotal,
-      dueDate: dueDate?.format('YYYY-MM-DD'),
-    });
     cards.push({
       cardId, cfg, accData,
-      unpaidTotal, unpaidExpenses: unpaidExpenses.length,
+      unpaidTotal, unpaidExpenseList,
+      billedExpenseList,
       dueDate, daysUntilDue, isUrgent, isOverdue,
       minPayment: accData.minPayment || 0,
       billStart, billEnd,
     });
   });
+
+  // 渲染明细行的辅助函数
+  function renderExpenseRows(list) {
+    if (!list || list.length === 0) return '<div style="padding:8px 12px;color:var(--text-muted);font-size:0.8rem">暂无消费记录</div>';
+    return list.map(e => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-top:1px solid var(--border);font-size:0.8rem">
+        <div style="flex:1;min-width:0">
+          <span style="color:var(--text-muted);margin-right:6px">${dayjs(e.date).format('M/D')}</span>
+          <span style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block;vertical-align:bottom">${e.note || e.category || '-'}</span>
+        </div>
+        <span style="color:${e.amount < 0 ? 'var(--success)' : 'var(--text)'};font-weight:500;margin-left:8px;white-space:nowrap">${e.amount < 0 ? '-' : ''}${fmt(Math.abs(e.amount))}</span>
+      </div>`).join('');
+  }
 
   // 渲染
   let html = '';
@@ -2074,20 +2087,34 @@ function renderBillingStatus() {
             : `<span style="color:var(--text-muted)">${c.dueDate.format('M月D日')} 还款（${c.daysUntilDue}天后）</span>`)
       : '-';
 
+    const billedId = `billed-${c.cardId}`;
+    const unpaidId = `unpaid-${c.cardId}`;
+    const hasBilled = c.billedExpenseList.length > 0;
+    const hasUnpaid = c.unpaidExpenseList.length > 0;
+
     html += `
       <div class="billing-card">
         <div class="billing-card-name">${c.cfg.name}</div>
-        <div class="billing-card-row">
+        <div class="billing-card-row" style="cursor:${hasBilled ? 'pointer' : 'default'}" onclick="${hasBilled ? `toggleBillingDetail('${billedId}')` : ''}">
           <span class="billing-label">已出账待还
             ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
+            ${hasBilled ? `<span class="billing-toggle" id="arrow-${billedId}">▼</span>` : ''}
           </span>
           <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.minPayment > 0 ? fmt(c.minPayment) : '暂无'}</span>
         </div>
-        <div class="billing-card-row">
-          <span class="billing-label">本期未出账</span>
-          <span class="billing-value" style="color:var(--info)">
-            ${c.unpaidTotal > 0 ? fmt(c.unpaidTotal) + ` (${c.unpaidExpenses}笔)` : '暂无'}
+        <div class="billing-detail" id="${billedId}">
+          ${renderExpenseRows(c.billedExpenseList)}
+        </div>
+        <div class="billing-card-row" style="cursor:${hasUnpaid ? 'pointer' : 'default'}" onclick="${hasUnpaid ? `toggleBillingDetail('${unpaidId}')` : ''}">
+          <span class="billing-label">本期未出账
+            ${hasUnpaid ? `<span class="billing-toggle" id="arrow-${unpaidId}">▼</span>` : ''}
           </span>
+          <span class="billing-value" style="color:var(--info)">
+            ${c.unpaidTotal > 0 ? fmt(c.unpaidTotal) + ` (${c.unpaidExpenseList.length}笔)` : '暂无'}
+          </span>
+        </div>
+        <div class="billing-detail" id="${unpaidId}">
+          ${renderExpenseRows(c.unpaidExpenseList)}
         </div>
         <div class="billing-card-row">
           <span class="billing-label">下次还款日</span>
@@ -2097,6 +2124,15 @@ function renderBillingStatus() {
   });
 
   container.innerHTML = html || '<div style="color:var(--text-muted);padding:16px">暂无信用卡数据</div>';
+}
+
+// ===== 账单明细展开/收起 =====
+function toggleBillingDetail(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (!el) return;
+  const isOpen = el.classList.toggle('open');
+  if (arrow) arrow.style.transform = isOpen ? 'rotate(180deg)' : '';
 }
 
 // ===== 还款日提醒（浏览器通知）=====

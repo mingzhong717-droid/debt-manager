@@ -1201,6 +1201,25 @@ input:focus, select:focus, textarea:focus {
 .billing-label { color: var(--text-muted); }
 .billing-value { font-weight: 600; color: var(--warning); }
 .billing-value.urgent { color: var(--danger); }
+.billing-card-row { cursor: default; user-select: none; }
+.billing-toggle {
+  display: inline-block;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+  transition: transform 0.2s ease;
+  vertical-align: middle;
+}
+.billing-detail {
+  display: none;
+  background: var(--bg);
+  border-radius: 6px;
+  margin: 2px 0 6px;
+  overflow: hidden;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.billing-detail.open { display: block; }
 
 /* ===== Toast 提示 ===== */
 .toast {
