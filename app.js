@@ -2528,36 +2528,47 @@ async function handleAISend() {
   document.getElementById('aiTextInput').value = '';
 
   try {
-    // ===== 图片路径：VL 直接返回 JSON 数组，批量展示 =====
+    // ===== 图片路径：逐张调用 VL 识别，合并结果 =====
     if (hasImg) {
-      setAIStatus('图片识别中（LongCat-VL）...', 'loading');
-      aiChatBubbles.push({ role: 'ai', text: '⏳ 图片识别中', parsed: null, streaming: true });
+      const imgCount = savedImages.length;
+      setAIStatus(`图片识别中（1/${imgCount}）...`, 'loading');
+      aiChatBubbles.push({ role: 'ai', text: `⏳ 图片识别中（1/${imgCount}）...`, parsed: null, streaming: true });
       renderAIChat();
 
-      const vlRaw = await callVLModel(text, savedImages);
+      let allItems = [];
+      for (let i = 0; i < savedImages.length; i++) {
+        setAIStatus(`图片识别中（${i + 1}/${imgCount}）...`, 'loading');
+        // 更新占位气泡文本
+        aiChatBubbles[aiChatBubbles.length - 1].text = `⏳ 图片识别中（${i + 1}/${imgCount}）...`;
+        renderAIChat();
+
+        const vlRaw = await callVLModel(text, savedImages[i]);
+
+        // 解析 VL 返回的 JSON 数组
+        let items = [];
+        try {
+          const cleaned = vlRaw.trim()
+            .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+          const parsed = JSON.parse(cleaned);
+          items = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          const m = vlRaw.match(/\[[\s\S]*\]/);
+          if (m) { try { items = JSON.parse(m[0]); } catch {} }
+        }
+        allItems = allItems.concat(items);
+      }
+
       clearAIImage();
       aiChatBubbles.pop(); // 移除占位气泡
 
-      // 解析 VL 返回的 JSON 数组
-      let items = [];
-      try {
-        const cleaned = vlRaw.trim()
-          .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(cleaned);
-        items = Array.isArray(parsed) ? parsed : [parsed];
-      } catch {
-        const m = vlRaw.match(/\[[\s\S]*\]/);
-        if (m) { try { items = JSON.parse(m[0]); } catch {} }
-      }
-
-      if (items.length === 0) {
+      if (allItems.length === 0) {
         aiChatBubbles.push({ role: 'ai', text: '❌ 未能识别到消费记录，请重试或手动描述', parsed: null });
         renderAIChat();
         setAIStatus('识别失败', 'error');
       } else {
         // 补全默认值
         const todayStr = dayjs().format('YYYY-MM-DD');
-        items = items.map(it => ({
+        allItems = allItems.map(it => ({
           intent: 'add_expense',
           date:     it.date     || todayStr,
           amount:   parseFloat(it.amount) || 0,
@@ -2568,13 +2579,13 @@ async function handleAISend() {
         // 批量气泡：一个汇总气泡 + 每条独立卡片
         aiChatBubbles.push({
           role: 'ai', text: '', parsed: null,
-          batchSummary: `📋 共识别到 ${items.length} 笔消费，请逐条确认或跳过：`
+          batchSummary: `📋 共识别到 ${allItems.length} 笔消费，请逐条确认或跳过：`
         });
-        items.forEach(item => {
+        allItems.forEach(item => {
           aiChatBubbles.push({ role: 'ai', text: '', parsed: item, batchItem: true });
         });
         renderAIChat();
-        setAIStatus(`✅ 识别到 ${items.length} 笔，请逐条确认`, 'success');
+        setAIStatus(`✅ 识别到 ${allItems.length} 笔，请逐条确认`, 'success');
         saveAIChatHistory();
       }
 
@@ -2623,16 +2634,18 @@ async function handleAISend() {
   }
 }
 
-// 调用 LongCat-VL 识别图片，直接返回 JSON 数组（所有消费条目）
-async function callVLModel(text, images) {
+// 调用 LongCat-VL 识别单张图片，直接返回 JSON 数组（所有消费条目）
+async function callVLModel(text, image) {
 const today = dayjs().format('YYYY-MM-DD');
 const prompt = `请识别图中所有消费记录，${text ? '结合用户说明："' + text + '"，' : ''}直接返回 JSON 数组，不要任何解释文字。
 格式：[{"date":"YYYY-MM-DD","amount":数字,"category":"分类","payment":"支付方式","note":"备注"}, ...]
 category 只能是：餐饮堂食、外卖、买菜生鲜、烟酒零食、交通出行、购物数码、购物服装、日用百货、娱乐休闲、订阅会员、医疗健康、教育学习、居家大件、转账还款、宠物、其他
 payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、花呗、美团月付、微信/支付宝、现金
 日期如图中未显示则用今天 ${today}，金额为正数（收入/退款用负数）。只返回 JSON 数组，不要 markdown 代码块。`;
-const userContent = images.map(img => ({ type: 'image_url', image_url: { url: `data:${img.mime};base64,${img.base64}` } }));
-userContent.push({ type: 'text', text: prompt });
+const userContent = [
+{ type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.base64}` } },
+{ type: 'text', text: prompt },
+];
   // VL 模型使用专用接口和 max_new_tokens 参数
   const resp = await fetch(FRIDAY_VL_API, {
     method: 'POST',
@@ -2643,7 +2656,7 @@ userContent.push({ type: 'text', text: prompt });
     body: JSON.stringify({
       model: MODEL_VL,
       messages: [{ role: 'user', content: userContent }],
-      max_new_tokens: 400,
+      max_new_tokens: 1200,
       temperature: 0.95,
       repetition_penalty: 1.1,
       top_p: 0.7,
