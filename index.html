@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="负债管理" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 
-  <link rel="stylesheet" href="style.css?v=20260619o" />
+  <link rel="stylesheet" href="style.css?v=20260619p" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
     onerror="console.warn('[CDN] chart.js 加载失败，图表功能不可用')"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"
@@ -266,7 +266,7 @@
       <div class="ai-input-inner">
         <label class="ai-img-btn" for="aiImageInput" title="上传图片">
           📷
-          <input type="file" id="aiImageInput" accept="image/*" style="display:none" />
+          <input type="file" id="aiImageInput" accept="image/*" multiple style="display:none" />
         </label>
         <textarea id="aiTextInput" class="ai-textarea" placeholder="描述消费、录入贷款、查询负债…" rows="1"></textarea>
         <button class="ai-voice-btn" id="aiVoiceBtn" title="语音输入">🎤</button>
@@ -339,6 +339,70 @@
         <input type="text" id="expNote" placeholder="可选备注..." />
       </div>
       <button class="btn-primary" onclick="addExpense()" style="width:100%;margin-top:8px">💾 保存消费</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI消费编辑弹窗 ===== -->
+<div class="modal-overlay" id="aiEditOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span>✏️ 编辑消费记录</span>
+      <button class="modal-close" onclick="closeAIEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="aiEditDate" />
+        </div>
+        <div class="form-group">
+          <label>金额 (元，退款用负数)</label>
+          <input type="number" id="aiEditAmount" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>分类</label>
+          <select id="aiEditCategory">
+            <option value="餐饮堂食">🍜 餐饮堂食</option>
+            <option value="外卖">🛵 外卖</option>
+            <option value="买菜生鲜">🥦 买菜生鲜</option>
+            <option value="烟酒零食">🚬 烟酒零食</option>
+            <option value="交通出行">🚇 交通出行</option>
+            <option value="购物数码">📱 购物数码</option>
+            <option value="购物服装">👕 购物服装</option>
+            <option value="日用百货">🧴 日用百货</option>
+            <option value="娱乐休闲">🎮 娱乐休闲</option>
+            <option value="订阅会员">📺 订阅会员</option>
+            <option value="医疗健康">🏥 医疗健康</option>
+            <option value="教育学习">📚 教育学习</option>
+            <option value="居家大件">🏠 居家大件</option>
+            <option value="转账还款">💸 转账还款</option>
+            <option value="宠物">🐾 宠物</option>
+            <option value="其他">📦 其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>支付方式</label>
+          <select id="aiEditPayment">
+            <option value="招商信用卡">招商信用卡</option>
+            <option value="广州银行信用卡">广州银行信用卡</option>
+            <option value="浦发信用卡">浦发信用卡</option>
+            <option value="农行信用卡">农行信用卡</option>
+            <option value="民生信用卡">民生信用卡</option>
+            <option value="花呗">花呗</option>
+            <option value="美团月付">美团月付</option>
+            <option value="微信/支付宝">微信/支付宝</option>
+            <option value="现金">现金</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <input type="text" id="aiEditNote" placeholder="可选备注..." />
+      </div>
+      <button class="btn-primary" onclick="saveAIEditModal()" style="width:100%;margin-top:8px">💾 保存修改</button>
     </div>
   </div>
 </div>
@@ -486,7 +550,7 @@
 <!-- ===== 回到顶部按钮 ===== -->
 <button id="backToTopBtn" title="回到顶部">↑</button>
 
-<script src="app.js?v=20260619o"></script>
+<script src="app.js?v=20260619p"></script>
 
 <!-- Service Worker 注册 & 自动更新 -->
 <script>

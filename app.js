@@ -2387,33 +2387,45 @@ let aiConversation = [];  // [{role, content}]
 // 界面气泡历史（用于渲染）
 let aiChatBubbles  = [];  // [{role:'user'|'ai', text, imgSrc?, parsed?}]
 
-let aiImageBase64 = null;
-let aiImageMime   = null;
+let aiImageList = []; // [{base64, mime, dataUrl}]
 
-// ---- 图片选择 ----
+// ---- 图片选择（支持多图）----
 document.getElementById('aiImageInput').addEventListener('change', function () {
-  const file = this.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
-    if (!match) return;
-    aiImageMime   = match[1];
-    aiImageBase64 = match[2];
-    document.getElementById('aiImagePreview').src = dataUrl;
-    document.getElementById('aiImagePreviewRow').style.display = 'flex';
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(this.files);
+  if (files.length === 0) return;
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
+      if (!match) return;
+      aiImageList.push({ base64: match[2], mime: match[1], dataUrl });
+      loaded++;
+      if (loaded === files.length) renderAIImagePreview();
+    };
+    reader.readAsDataURL(file);
+  });
   this.value = '';
 });
 
-document.getElementById('aiRemoveImg').addEventListener('click', clearAIImage);
+function renderAIImagePreview() {
+  const row = document.getElementById('aiImagePreviewRow');
+  if (aiImageList.length === 0) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  row.innerHTML = aiImageList.map((img, i) =>
+    `<div class="ai-img-thumb-wrap"><img src="${img.dataUrl}" class="ai-img-thumb" alt="预览${i+1}" /><button class="ai-remove-img" onclick="removeAIImage(${i})">✕</button></div>`
+  ).join('') + `<button class="ai-clear-all-img" onclick="clearAIImage()">全部清除</button>`;
+}
+
+function removeAIImage(idx) {
+  aiImageList.splice(idx, 1);
+  renderAIImagePreview();
+}
+
 function clearAIImage() {
-  aiImageBase64 = null;
-  aiImageMime   = null;
-  document.getElementById('aiImagePreviewRow').style.display = 'none';
-  document.getElementById('aiImagePreview').src = '';
+  aiImageList = [];
+  renderAIImagePreview();
 }
 
 // ---- 清空对话 ----
@@ -2496,7 +2508,7 @@ if (aiChatBubbles.length > 0) renderAIChat();
 
 async function handleAISend() {
   const text   = document.getElementById('aiTextInput').value.trim();
-  const hasImg = !!aiImageBase64;
+  const hasImg = aiImageList.length > 0;
   if (!text && !hasImg) { setAIStatus('请输入消费描述或上传图片', 'error'); return; }
 
   const btn = document.getElementById('aiSendBtn');
@@ -2506,10 +2518,9 @@ async function handleAISend() {
   setAIStatus('AI 识别中...', 'loading');
 
   // 记录用户气泡
-  const imgSrc = hasImg ? document.getElementById('aiImagePreview').src : null;
+  const imgSrc = hasImg ? aiImageList.map(i => i.dataUrl) : null;
   // 提前保存图片数据，clearAIImage 会清空全局变量
-  const savedBase64 = aiImageBase64;
-  const savedMime   = aiImageMime;
+  const savedImages = aiImageList.map(i => ({ base64: i.base64, mime: i.mime }));
   aiChatBubbles.push({ role: 'user', text: text || '（图片）', imgSrc });
   renderAIChat();
 
@@ -2523,7 +2534,7 @@ async function handleAISend() {
       aiChatBubbles.push({ role: 'ai', text: '⏳ 图片识别中', parsed: null, streaming: true });
       renderAIChat();
 
-      const vlRaw = await callVLModel(text, { base64: savedBase64, mime: savedMime });
+      const vlRaw = await callVLModel(text, savedImages);
       clearAIImage();
       aiChatBubbles.pop(); // 移除占位气泡
 
@@ -2613,17 +2624,15 @@ async function handleAISend() {
 }
 
 // 调用 LongCat-VL 识别图片，直接返回 JSON 数组（所有消费条目）
-async function callVLModel(text, image) {
-  const today = dayjs().format('YYYY-MM-DD');
-  const prompt = `请识别图中所有消费记录，${text ? '结合用户说明："' + text + '"，' : ''}直接返回 JSON 数组，不要任何解释文字。
+async function callVLModel(text, images) {
+const today = dayjs().format('YYYY-MM-DD');
+const prompt = `请识别图中所有消费记录，${text ? '结合用户说明："' + text + '"，' : ''}直接返回 JSON 数组，不要任何解释文字。
 格式：[{"date":"YYYY-MM-DD","amount":数字,"category":"分类","payment":"支付方式","note":"备注"}, ...]
 category 只能是：餐饮堂食、外卖、买菜生鲜、烟酒零食、交通出行、购物数码、购物服装、日用百货、娱乐休闲、订阅会员、医疗健康、教育学习、居家大件、转账还款、宠物、其他
 payment 只能是：招商信用卡、广州银行信用卡、浦发信用卡、农行信用卡、民生信用卡、花呗、美团月付、微信/支付宝、现金
 日期如图中未显示则用今天 ${today}，金额为正数（收入/退款用负数）。只返回 JSON 数组，不要 markdown 代码块。`;
-  const userContent = [
-    { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.base64}` } },
-    { type: 'text', text: prompt },
-  ];
+const userContent = images.map(img => ({ type: 'image_url', image_url: { url: `data:${img.mime};base64,${img.base64}` } }));
+userContent.push({ type: 'text', text: prompt });
   // VL 模型使用专用接口和 max_new_tokens 参数
   const resp = await fetch(FRIDAY_VL_API, {
     method: 'POST',
@@ -2870,7 +2879,10 @@ function renderAIChat() {
   el.innerHTML = aiChatBubbles.map((b, idx) => {
     if (b.role === 'user') {
       const imgHtml = b.imgSrc
-        ? `<img src="${b.imgSrc}" class="ai-bubble-img" alt="图片" />`  : '';
+        ? (Array.isArray(b.imgSrc)
+            ? b.imgSrc.map(src => `<img src="${src}" class="ai-bubble-img" alt="图片" />`).join('')
+            : `<img src="${b.imgSrc}" class="ai-bubble-img" alt="图片" />`)
+        : '';
       const txt = b.text && b.text !== '（图片）'
         ? `<span>${escHtml(b.text)}</span>` : '';
       return `<div class="ai-bubble ai-bubble-user">${imgHtml}${txt}</div>`;
@@ -2909,10 +2921,7 @@ function renderAIChat() {
               </div>
             </div>`;
           }
-          // 编辑模式
-          if (b.editing) {
-            return renderExpenseEditCard(p, bubbleIdx, true);
-          }
+          // 编辑模式已改为弹窗，这里只做展示
           return `<div class="ai-bubble ai-bubble-ai">
             <div class="ai-intent-tag">🛒 录入消费</div>
             ${renderExpenseDisplayCard(p)}
@@ -2924,9 +2933,6 @@ function renderAIChat() {
           </div>`;
         }
         // 单条（文字输入路径）
-        if (b.editing) {
-          return renderExpenseEditCard(p, bubbleIdx, false);
-        }
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
           ${renderExpenseDisplayCard(p)}
@@ -2999,10 +3005,10 @@ function escHtml(s) {
 
 // AI 识别消费后直接录入（支持 bubbleIdx 标记已确认）
 async function addExpenseFromAI(data, bubbleIdx) {
-  if (!data || !data.amount || data.amount <= 0) {
-    showToast('❌ 金额无效，请重新描述');
-    return;
-  }
+if (!data || !data.amount || data.amount === 0) {
+showToast('❌ 金额无效，请重新描述');
+return;
+}
   const cardId = PAYMENT_TO_CARD[data.payment];
   const billing = cardId ? getBillingCycle(cardId, data.date) : null;
   const expense = {
@@ -3056,73 +3062,40 @@ function renderExpenseDisplayCard(p) {
   return `<div class="ai-parsed-card">${rows.join('')}</div>`;
 }
 
-function renderExpenseEditCard(p, bubbleIdx, isBatch) {
-  const categories = ['餐饮堂食','外卖','买菜生鲜','烟酒零食','交通出行','购物数码','购物服装','日用百货','娱乐休闲','订阅会员','医疗健康','教育学习','居家大件','转账还款','宠物','其他'];
-  const payments = ['招商信用卡','广州银行信用卡','浦发信用卡','农行信用卡','民生信用卡','花呗','美团月付','微信/支付宝','现金'];
-  const today = dayjs().format('YYYY-MM-DD');
-  const dateVal = p.date || today;
-  const catOpts = categories.map(c => `<option value="${c}" ${c === (p.category||'') ? 'selected':''}>${c}</option>`).join('');
-  const payOpts = payments.map(pm => `<option value="${pm}" ${pm === (p.payment||'') ? 'selected':''}>${pm}</option>`).join('');
-  return `<div class="ai-bubble ai-bubble-ai">
-    <div class="ai-intent-tag">✏️ 编辑消费</div>
-    <div class="ai-parsed-card ai-edit-card">
-      <div class="ai-edit-row">
-        <label>📅 日期</label>
-        <input type="date" class="ai-edit-input" id="edit-date-${bubbleIdx}" value="${dateVal}">
-      </div>
-      <div class="ai-edit-row">
-        <label>💰 金额</label>
-        <input type="number" class="ai-edit-input" id="edit-amount-${bubbleIdx}" value="${p.amount||''}" step="0.01" min="0">
-      </div>
-      <div class="ai-edit-row">
-        <label>🏷️ 分类</label>
-        <select class="ai-edit-input" id="edit-category-${bubbleIdx}">${catOpts}</select>
-      </div>
-      <div class="ai-edit-row">
-        <label>💳 支付</label>
-        <select class="ai-edit-input" id="edit-payment-${bubbleIdx}">${payOpts}</select>
-      </div>
-      <div class="ai-edit-row">
-        <label>📝 备注</label>
-        <input type="text" class="ai-edit-input" id="edit-note-${bubbleIdx}" value="${escHtml(p.note||'')}" placeholder="可选">
-      </div>
-    </div>
-    <div class="ai-batch-actions">
-      <button class="ai-confirm-btn" onclick="saveBatchEdit(${bubbleIdx})">💾 保存</button>
-      <button class="ai-skip-btn" onclick="cancelBatchEdit(${bubbleIdx})">↩️ 取消</button>
-    </div>
-  </div>`;
-}
-
 function editBatchItem(bubbleIdx) {
-  if (aiChatBubbles[bubbleIdx]) {
-    aiChatBubbles[bubbleIdx].editing = true;
-    renderAIChat();
-  }
+  if (!aiChatBubbles[bubbleIdx]) return;
+  const p = aiChatBubbles[bubbleIdx].parsed;
+  if (!p) return;
+  document.getElementById('aiEditDate').value = p.date || dayjs().format('YYYY-MM-DD');
+  document.getElementById('aiEditAmount').value = p.amount || '';
+  document.getElementById('aiEditCategory').value = p.category || '其他';
+  document.getElementById('aiEditPayment').value = p.payment || '微信/支付宝';
+  document.getElementById('aiEditNote').value = p.note || '';
+  document.getElementById('aiEditOverlay').dataset.bubbleIdx = bubbleIdx;
+  document.getElementById('aiEditOverlay').classList.add('open');
 }
 
-function saveBatchEdit(bubbleIdx) {
+function closeAIEditModal() {
+  document.getElementById('aiEditOverlay').classList.remove('open');
+}
+
+function saveAIEditModal() {
+  const overlay = document.getElementById('aiEditOverlay');
+  const bubbleIdx = overlay.dataset.bubbleIdx;
   const b = aiChatBubbles[bubbleIdx];
   if (!b) return;
-  const date = document.getElementById(`edit-date-${bubbleIdx}`)?.value;
-  const amount = parseFloat(document.getElementById(`edit-amount-${bubbleIdx}`)?.value);
-  const category = document.getElementById(`edit-category-${bubbleIdx}`)?.value;
-  const payment = document.getElementById(`edit-payment-${bubbleIdx}`)?.value;
-  const note = document.getElementById(`edit-note-${bubbleIdx}`)?.value;
-  if (!amount || amount <= 0) { showToast('❌ 金额无效'); return; }
+  const date = document.getElementById('aiEditDate').value;
+  const amount = parseFloat(document.getElementById('aiEditAmount').value);
+  const category = document.getElementById('aiEditCategory').value;
+  const payment = document.getElementById('aiEditPayment').value;
+  const note = document.getElementById('aiEditNote').value;
+  if (isNaN(amount) || amount === 0) { showToast('❌ 金额无效'); return; }
   if (!date) { showToast('❌ 日期无效'); return; }
   b.parsed = { ...b.parsed, date, amount, category, payment, note: note || '' };
-  b.editing = false;
+  closeAIEditModal();
   renderAIChat();
   saveAIChatHistory();
   showToast('✅ 已修改，请确认录入');
-}
-
-function cancelBatchEdit(bubbleIdx) {
-  if (aiChatBubbles[bubbleIdx]) {
-    aiChatBubbles[bubbleIdx].editing = false;
-    renderAIChat();
-  }
 }
 
 // ===== 对话历史持久化 =====
@@ -3137,7 +3110,6 @@ function saveAIChatHistory() {
       batchItem: b.batchItem,
       confirmed: b.confirmed,
       skipped: b.skipped,
-      editing: false, // 不持久化编辑状态，重新加载时退出编辑
       // imgSrc 可能很大，只保留有无标记
       hasImg: !!b.imgSrc,
     }));
@@ -3155,7 +3127,6 @@ function loadAIChatHistory() {
     if (bubbles) {
       aiChatBubbles = JSON.parse(bubbles).map(b => ({
         ...b,
-        editing: false, // 加载时退出编辑模式
         imgSrc: b.hasImg ? null : undefined, // 图片不恢复，只保留文字
       }));
     }

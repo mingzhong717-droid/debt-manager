@@ -1561,33 +1561,53 @@ input:focus, select:focus, textarea:focus {
   transition: all var(--transition);
 }
 .ai-edit-btn:hover { background: #dce4ff; }
-.ai-edit-card { gap: 8px; }
-.ai-edit-row {
+.ai-preview-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  align-items: center;
 }
-.ai-edit-row label {
+.ai-img-thumb-wrap {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+.ai-img-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+}
+.ai-img-thumb-wrap .ai-remove-img {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.ai-clear-all-img {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
   font-size: 12px;
   color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
 }
-.ai-edit-input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1.5px solid #e2e6f0;
-  border-radius: 8px;
-  background: #f9fafb;
-  font-size: 14px;
-  color: var(--text);
-  font-family: inherit;
-  transition: border-color var(--transition);
-  box-sizing: border-box;
-}
-.ai-edit-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: #fff;
-}
+.ai-clear-all-img:hover { color: var(--danger); border-color: var(--danger); }
 .ai-input-row {
   display: flex;
   gap: 8px;
