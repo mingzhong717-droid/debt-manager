@@ -351,6 +351,20 @@ function init() {
   setTimeout(flushPendingSaves, 2000);
 }
 
+// ===== 获取账户净负债（扣除已还金额）=====
+function getNetDebt(acc) {
+  if (acc.type === 'credit') {
+    // 信用卡：真实负债 = 分期剩余余额之和 + 当期未分期账单余额 - 已还金额
+    const instTotal = (acc.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
+    const billAmount = acc.currentBillAmount || acc.minPayment || 0;
+    const instMonthly = (acc.installments || []).reduce((s, i) => s + (i.monthlyPayment || 0), 0);
+    const nonInstBill = Math.max(0, billAmount - instMonthly);
+    const paidAmount = acc.paidAmount || 0;
+    return Math.max(0, instTotal + nonInstBill - paidAmount);
+  }
+  return acc.totalDebt || 0;
+}
+
 // ===== 计算汇总数据 =====
 function calcSummary() {
   let totalDebt = 0;
@@ -370,16 +384,13 @@ function calcSummary() {
         if (!nextDue || dueDate.isBefore(nextDue)) nextDue = dueDate;
 
       } else if (acc.type === 'credit') {
-        // 信用卡：真实负债 = 分期剩余余额之和 + 当期未分期账单余额
-        const instTotal = (acc.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
-        // 当期账单中，分期月供部分已包含在 installments 里，minPayment 是当期账单总额
-        // 为避免重复，非分期部分 = minPayment - 当期分期月供之和
-        const instMonthly = (acc.installments || []).reduce((s, i) => s + (i.monthlyPayment || 0), 0);
-        const nonInstBill = Math.max(0, (acc.minPayment || 0) - instMonthly);
-        totalDebt += instTotal + nonInstBill;
+        // 信用卡：用统一函数计算净负债
+        totalDebt += getNetDebt(acc);
 
-        // 月供：当期账单（含分期月供）
-        monthlyDue += acc.minPayment || 0;
+        // 月供：当期账单（含分期月供），减去已还部分
+        const billAmount = acc.currentBillAmount || acc.minPayment || 0;
+        const paidAmount = acc.paidAmount || 0;
+        monthlyDue += Math.max(0, billAmount - paidAmount);
 
         // 还款日
         const dueDay = acc.dueDay;
@@ -527,7 +538,7 @@ function renderBankCards() {
   container.innerHTML = '';
 
   DATA.banks.forEach((bank, i) => {
-    const bankTotal = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
+    const bankTotal = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
 
     const card = document.createElement('div');
     card.className = 'bank-card';
@@ -542,10 +553,11 @@ function renderBankCards() {
       if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
       const daysLeft = dueDate.diff(now, 'day');
       const isUrgent = daysLeft <= 5;
+      const netDebt = getNetDebt(acc);
 
       let extraInfo = '';
       if (acc.type === 'credit') {
-        const usedPct = acc.totalDebt / acc.creditLimit;
+        const usedPct = netDebt / acc.creditLimit;
         extraInfo = `
           <div class="credit-bar">
             <div class="credit-bar-fill" style="width:${Math.min(usedPct * 100, 100)}%"></div>
@@ -568,7 +580,7 @@ function renderBankCards() {
         <div class="account-item">
           <div class="account-header">
             <span class="account-name">${acc.name}</span>
-            <span class="account-amount">${fmt(acc.totalDebt)}</span>
+            <span class="account-amount">${fmt(netDebt)}</span>
           </div>
           <div class="account-meta">
             <span>还款日 <span class="due-badge ${isUrgent ? 'urgent' : ''}">${dueDay}号 (${daysLeft}天后)</span></span>
@@ -603,7 +615,7 @@ function renderPieChart() {
   const colors = [];
 
   DATA.banks.forEach(bank => {
-    const total = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
+    const total = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
     if (total > 0) {
       labels.push(bank.shortName);
       values.push(total);
@@ -1148,8 +1160,9 @@ function renderTimeline() {
         } else {
           // 无分期：按最低还款估算结清时间
           const rate = acc.interestRate * 30;
-          const minPay = acc.minPayment || acc.totalDebt;
-          let balance = acc.totalDebt;
+          const netDebt = getNetDebt(acc);
+          const minPay = acc.minPayment || netDebt;
+          let balance = netDebt;
           let months = 0;
           while (balance > 0.01 && months < 360) {
             const interest = balance * rate;
@@ -1165,7 +1178,7 @@ function renderTimeline() {
             endDate, monthsLeft,
             bankName: bank.name, bankIcon: bank.icon, bankColor: bank.color,
             accountName: acc.name,
-            totalDebt: acc.totalDebt,
+            totalDebt: netDebt,
             monthlyPayment: minPay,
             pct: 0,
             note: '按最低还款估算'
