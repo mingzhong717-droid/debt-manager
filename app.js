@@ -2946,6 +2946,27 @@ function renderAIChat() {
           </div>`;
         }
         // 单条（文字输入路径）
+        if (b.confirmed) {
+          return `<div class="ai-bubble ai-bubble-ai ai-batch-done">
+            <div class="ai-intent-tag">✅ 已录入</div>
+            <div class="ai-parsed-card">
+              <div class="ai-parsed-row"><span>📅 日期</span><strong>${escHtml(p.date || '-')}</strong></div>
+              <div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>
+              <div class="ai-parsed-row"><span>🏷️ 分类</span><strong>${escHtml(p.category || '其他')}</strong></div>
+              <div class="ai-parsed-row"><span>💳 支付</span><strong>${escHtml(p.payment || '微信/支付宝')}</strong></div>
+              ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+            </div>
+          </div>`;
+        }
+        if (b.skipped) {
+          return `<div class="ai-bubble ai-bubble-ai ai-batch-done" style="opacity:0.45">
+            <div class="ai-intent-tag">⏭️ 已跳过</div>
+            <div class="ai-parsed-card">
+              <div class="ai-parsed-row"><span>💰 金额</span><strong>¥${p.amount}</strong></div>
+              ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
+            </div>
+          </div>`;
+        }
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
           ${renderExpenseDisplayCard(p, bubbleIdx)}
