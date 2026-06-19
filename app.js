@@ -402,6 +402,23 @@ function getNetDebt(acc) {
   return acc.totalDebt || 0;
 }
 
+// ===== 计算信用卡已用额度（动态）=====
+function calcUsedCredit(acc) {
+  if (acc.type !== 'credit') return 0;
+  // 账单剩余 = 当期账单 - 已还
+  const billAmount = acc.currentBillAmount || 0;
+  const paidAmount = acc.paidAmount || 0;
+  const billRemaining = Math.max(0, billAmount - paidAmount);
+
+  // 分期剩余本金（银行按本金占额度，不含利息）
+  const instPrincipal = (acc.installments || []).reduce((s, i) => s + (i.remainingPrincipal || i.remainingAmount || 0), 0);
+
+  // 未出账净值
+  const unpaidTotal = getUnpaidTotal(acc.id);
+
+  return billRemaining + instPrincipal + unpaidTotal;
+}
+
 // ===== 计算汇总数据 =====
 function calcSummary() {
   let totalDebt = 0;
@@ -593,8 +610,8 @@ function renderBankCards() {
 
       let extraInfo = '';
       if (acc.type === 'credit') {
-        // 已用额度：优先用 usedCredit（真实值），否则用 totalDebt 估算
-        const usedCredit = acc.usedCredit || acc.totalDebt || 0;
+        // 已用额度：动态计算 = 账单剩余 + 分期剩余本金 + 未出账净值
+        const usedCredit = calcUsedCredit(acc);
         const usedPct = usedCredit / acc.creditLimit;
         extraInfo = `
           <div class="credit-bar">
@@ -1755,9 +1772,12 @@ function renderExpenseStats() {
   if (Object.keys(byCategory).length === 0) return;
 
   const catColors = {
-    '餐饮': '#ff6b6b', '交通': '#4dabf7', '购物': '#ffa94d',
-    '娱乐': '#cc5de8', '医疗': '#51cf66', '教育': '#74c0fc',
-    '居家': '#a9e34b', '其他': '#868e96'
+    '餐饮堂食': '#ff6b6b', '外卖': '#f06595', '买菜生鲜': '#51cf66',
+    '烟酒零食': '#ff922b', '交通出行': '#4dabf7', '购物数码': '#9775fa',
+    '购物服装': '#cc5de8', '日用百货': '#ffa94d', '娱乐休闲': '#e64980',
+    '订阅会员': '#845ef7', '医疗健康': '#20c997', '教育学习': '#74c0fc',
+    '居家大件': '#a9e34b', '转账还款': '#adb5bd', '宠物': '#f783ac',
+    '其他': '#868e96'
   };
 
   expensePieChart = new Chart(ctx, {
