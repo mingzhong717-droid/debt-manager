@@ -387,6 +387,20 @@ function isRepayment(expense) {
   return !note.includes('退款');
 }
 
+// ===== 公共：消费变更后统一联动刷新所有相关板块 =====
+function refreshAfterExpenseChange() {
+  renderExpenseTable();
+  renderExpenseStats();
+  renderBillingStatus();
+  renderExpenseOverview();
+  renderAnalysisPage();
+  // 以下板块依赖 getUnpaidTotal / calcUsedCredit，消费变动后需刷新
+  renderSummaryBanner();
+  renderBankCards();
+  renderPieChart();
+  renderBarChart();
+}
+
 function getUnpaidTotal(cardId) {
   const cycle = getBillingCycleDates(cardId);
   if (!cycle) return 0;
@@ -1606,11 +1620,8 @@ function addExpense() {
   // 关闭弹窗
   closeAddExpense();
 
-  // 联动更新对应信用卡的未出账单显示
-  renderBillingStatus();
-  renderExpenseTable();
-  renderExpenseStats();
-  renderAnalysisPage();
+  // 联动更新所有相关板块
+  refreshAfterExpenseChange();
 
   // 成功提示
   const billTip = billing
@@ -1621,11 +1632,11 @@ function addExpense() {
 
 async function deleteExpense(id) {
   const all = getExpenses();
-  const target = all.find(e => e.id === id);
+  const target = all.find(e => String(e.id) === String(id));
   if (!target) return;
   const label = `${target.date} ${target.category} ${fmt(target.amount)}`;
   if (!confirm(`确定删除这条记录？\n${label}`)) return;
-  const expenses = all.filter(e => e.id !== id);
+  const expenses = all.filter(e => String(e.id) !== String(id));
   setSyncStatus('syncing');
   try {
     // 直接按 id 删除云端单条记录
@@ -1642,14 +1653,13 @@ async function deleteExpense(id) {
     setSyncStatus('error');
     showToast('本地已删除，云端同步失败');
   }
-  renderExpenseTable();
-  renderExpenseStats();
+  refreshAfterExpenseChange();
 }
 
 // 退款：复制原记录，金额取负，备注加「[退款]」前缀
 async function refundExpense(id) {
   const all = getExpenses();
-  const target = all.find(e => e.id === id);
+  const target = all.find(e => String(e.id) === String(id));
   if (!target) return;
   const label = `${target.date} ${target.category} ${fmt(target.amount)}`;
   if (!confirm(`为这条记录录入退款？\n${label}\n\n将自动添加一条 -${fmt(target.amount)} 的退款记录。`)) return;
@@ -1667,8 +1677,7 @@ async function refundExpense(id) {
   await saveExpenses(expenses);
   setSyncStatus('ok');
   showToast(`已录入退款 ${fmt(Math.abs(refund.amount))}`);
-  renderExpenseTable();
-  renderExpenseStats();
+  refreshAfterExpenseChange();
 }
 
 // ===== 编辑消费记录 =====
@@ -1687,7 +1696,7 @@ document.getElementById('editExpenseOverlay').addEventListener('click', (e) => {
 document.getElementById('editExpSave').addEventListener('click', saveEditedExpense);
 
 function openEditExpense(id) {
-  const exp = getExpenses().find(e => e.id === id);
+  const exp = getExpenses().find(e => String(e.id) === String(id));
   if (!exp) return;
   editingExpenseId = id;
   document.getElementById('editExpDate').value    = exp.date;
@@ -1701,7 +1710,7 @@ function openEditExpense(id) {
 async function saveEditedExpense() {
   if (!editingExpenseId) return;
   const expenses = getExpenses();
-  const idx = expenses.findIndex(e => e.id === editingExpenseId);
+  const idx = expenses.findIndex(e => String(e.id) === String(editingExpenseId));
   if (idx === -1) return;
 
   const orig = expenses[idx];
@@ -1725,8 +1734,7 @@ async function saveEditedExpense() {
   showToast('已保存修改');
   document.getElementById('editExpenseOverlay').style.display = 'none';
   editingExpenseId = null;
-  renderExpenseTable();
-  renderExpenseStats();
+  refreshAfterExpenseChange();
 }
 
 function clearMonthExpenses() {
@@ -1763,9 +1771,9 @@ function renderExpenseTable() {
       <td>${e.payment}${billTip}</td>
       <td style="color:var(--text-muted)">${e.note || '-'}</td>
       <td class="action-btns">
-        <button class="edit-btn" onclick="openEditExpense(${e.id})" title="编辑">✏️</button>
-        <button class="refund-btn" onclick="refundExpense(${e.id})" title="退款">↩️</button>
-        <button class="del-btn" onclick="deleteExpense(${e.id})" title="删除">🗑️</button>
+        <button class="edit-btn" onclick="openEditExpense('${e.id}')" title="编辑">✏️</button>
+        <button class="refund-btn" onclick="refundExpense('${e.id}')" title="退款">↩️</button>
+        <button class="del-btn" onclick="deleteExpense('${e.id}')" title="删除">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -2137,9 +2145,11 @@ function renderBillingStatus() {
     const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
 
     // 已出账单期间的消费明细
+    // 注意：billEnd 通常为出账日（如6/3），但出账日当天的消费归入下一期
+    // 因此已出账明细范围为 billStart ~ billEnd前一天（不含billEnd当天）
     const billedExpenseList = (billStart && billEnd) ? expenses.filter(e => {
       const d = dayjs(e.date);
-      const dateOk = d.isAfter(billStart.subtract(1, 'day')) && d.isBefore(billEnd.add(1, 'day'));
+      const dateOk = d.isAfter(billStart.subtract(1, 'day')) && d.isBefore(billEnd);
       if (!dateOk) return false;
       return e.cardId === cardId ||
              (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
@@ -3132,10 +3142,7 @@ const cardId = PAYMENT_TO_CARD[data.payment];
   expenses.push(expense);
   expenses.sort((a, b) => b.date.localeCompare(a.date));
   await saveExpenses(expenses);
-  renderExpenseTable();
-  renderAnalysisPage();
-  renderBillingStatus();
-  renderExpenseOverview();
+  refreshAfterExpenseChange();
   const billTip = billing ? `\n📋 计入 ${billing.billMonth} 账单，还款日 ${billing.dueDate.format('M月D日')}` : '';
   showToast(`✅ 已录入 ${data.payment} 消费 ¥${data.amount}${billTip}`);
   // 标记气泡为已确认
