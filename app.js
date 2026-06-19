@@ -41,7 +41,7 @@ let calendarDate = dayjs();
 let syncStatus = 'idle'; // idle | syncing | ok | error
 
 // ===== 工具函数 =====
-const fmt = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmt = (n) => { const v = Number(n); const dec = v % 1 === 0 ? 0 : 2; return '¥' + v.toLocaleString('zh-CN', { minimumFractionDigits: dec, maximumFractionDigits: dec }); };
 const fmtDecimal = (n) => '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtPct = (n) => (n * 100).toFixed(1) + '%';
 // 日历格子内简写：≥10000 → x.xw，≥1000 → x.xk，否则正常
