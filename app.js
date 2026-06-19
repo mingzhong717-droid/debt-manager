@@ -2189,7 +2189,7 @@ function renderBillingStatus() {
             ${hasUnpaid ? `<span class="billing-toggle" id="arrow-${unpaidId}">▼</span>` : ''}
           </span>
           <span class="billing-value" style="color:var(--info)">
-            ${c.unpaidTotal > 0 ? fmt(c.unpaidTotal) + ` (${c.unpaidExpenseList.length}笔)` : '暂无'}
+            ${hasUnpaid ? fmt(c.unpaidTotal) + ` (${c.unpaidExpenseList.length}笔)` : '暂无'}
           </span>
         </div>
         <div class="billing-detail" id="${unpaidId}">
@@ -2885,9 +2885,12 @@ async function aiConfirmInstallment(parsed) {
 }
 
 // ---- 渲染对话气泡 ----
-function renderAIChat() {
+function renderAIChat(preserveScroll) {
   const el = document.getElementById('aiChatHistory');
   if (aiChatBubbles.length === 0) { el.innerHTML = ''; return; }
+
+  // 保存滚动位置（确认/跳过/编辑时保持视野不变）
+  const savedScrollTop = preserveScroll ? el.scrollTop : null;
 
   el.innerHTML = aiChatBubbles.map((b, idx) => {
     if (b.role === 'user') {
@@ -3029,8 +3032,12 @@ function renderAIChat() {
     }
   }).join('');
 
-  // 滚动到底部
-  el.scrollTop = el.scrollHeight;
+  // 滚动到底部（或恢复滚动位置）
+  if (preserveScroll && savedScrollTop !== null) {
+    el.scrollTop = savedScrollTop;
+  } else {
+    el.scrollTop = el.scrollHeight;
+  }
 }
 
 function escHtml(s) {
@@ -3075,7 +3082,7 @@ const cardId = PAYMENT_TO_CARD[data.payment];
   // 标记气泡为已确认
   if (bubbleIdx !== undefined && aiChatBubbles[bubbleIdx]) {
     aiChatBubbles[bubbleIdx].confirmed = true;
-    renderAIChat();
+    renderAIChat(true);
     saveAIChatHistory();
   }
 }
@@ -3084,7 +3091,7 @@ const cardId = PAYMENT_TO_CARD[data.payment];
 function skipBatchItem(bubbleIdx) {
   if (aiChatBubbles[bubbleIdx]) {
     aiChatBubbles[bubbleIdx].skipped = true;
-    renderAIChat();
+    renderAIChat(true);
     saveAIChatHistory();
   }
 }
@@ -3153,7 +3160,7 @@ function saveAIEditModal() {
   if (!date) { showToast('❌ 日期无效'); return; }
   b.parsed = { ...b.parsed, date, amount, category, payment, note: note || '' };
   closeAIEditModal();
-  renderAIChat();
+  renderAIChat(true);
   saveAIChatHistory();
   showToast('✅ 已修改，请确认录入');
 }
