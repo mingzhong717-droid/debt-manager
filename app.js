@@ -2007,11 +2007,11 @@ function renderBillingStatus() {
     // 当前账单周期：上个账单日 ~ 本账单日
     let cycleStart, cycleEnd;
     if (now.date() <= cfg.billDay) {
-      cycleEnd = now.date(cfg.billDay);
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1);
+      cycleEnd = now.date(cfg.billDay).startOf('day');
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
     } else {
-      cycleStart = now.date(cfg.billDay + 1);
-      cycleEnd = now.add(1, 'month').date(cfg.billDay);
+      cycleStart = now.date(cfg.billDay + 1).startOf('day');
+      cycleEnd = now.add(1, 'month').date(cfg.billDay).startOf('day');
     }
 
     // 本周期内的消费（未出账）
@@ -2045,6 +2045,15 @@ function renderBillingStatus() {
     const billStart = accData.currentBillStart ? dayjs(accData.currentBillStart) : null;
     const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
 
+    console.log('[BillingStatus]', cardId, {
+      billStart: billStart?.format('YYYY-MM-DD'),
+      billEnd: billEnd?.format('YYYY-MM-DD'),
+      minPayment: accData.minPayment,
+      cycleStart: cycleStart.format('YYYY-MM-DD'),
+      cycleEnd: cycleEnd.format('YYYY-MM-DD'),
+      unpaidTotal,
+      dueDate: dueDate?.format('YYYY-MM-DD'),
+    });
     cards.push({
       cardId, cfg, accData,
       unpaidTotal, unpaidExpenses: unpaidExpenses.length,
