@@ -64,6 +64,7 @@
           "type": "credit",
           "name": "招商信用卡",
           "totalDebt": 19617.24,
+          "usedCredit": 33604.23,
           "creditLimit": 60000,
           "billDay": 3,
           "dueDay": 21,

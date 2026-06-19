@@ -556,7 +556,9 @@ function renderBankCards() {
 
       let extraInfo = '';
       if (acc.type === 'credit') {
-        const usedPct = acc.totalDebt / acc.creditLimit;
+        // 已用额度：优先用 usedCredit（真实值），否则用 totalDebt 估算
+        const usedCredit = acc.usedCredit || acc.totalDebt || 0;
+        const usedPct = usedCredit / acc.creditLimit;
         extraInfo = `
           <div class="credit-bar">
             <div class="credit-bar-fill" style="width:${Math.min(usedPct * 100, 100)}%"></div>
