@@ -2096,25 +2096,31 @@ function renderBillingStatus() {
     // 已还款金额（data.json 里记录的本期已还）
     const paidAmount = c.accData.paidAmount || 0;
     const netOwed = Math.max(0, c.billAmount - paidAmount);
-    const billedAmountTxt = c.billAmount > 0
-      ? (paidAmount > 0
-          ? `<span style="color:var(--danger);font-weight:600">${fmt(netOwed)}</span><span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px">（账单${fmt(c.billAmount)}，已还${fmt(paidAmount)}）</span>`
-          : `<span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${fmt(c.billAmount)}</span>`)
-      : '<span class="billing-value">暂无</span>';
+    const hasPaid = paidAmount > 0 && c.billAmount > 0;
 
     html += `
       <div class="billing-card">
         <div class="billing-card-name">${c.cfg.name}</div>
         <div class="billing-card-row${hasBilled ? ' billing-row-toggle' : ''}" data-toggle-id="${billedId}" style="cursor:${hasBilled ? 'pointer' : 'default'}">
-          <span class="billing-label">已出账待还
+          <span class="billing-label">${hasPaid ? '账单金额' : '已出账待还'}
             ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
             ${hasBilled ? `<span class="billing-toggle" id="arrow-${billedId}">▼</span>` : ''}
           </span>
-          <span>${billedAmountTxt}</span>
+          <span class="billing-value">${c.billAmount > 0 ? fmt(c.billAmount) : '暂无'}</span>
         </div>
         <div class="billing-detail" id="${billedId}">
           ${renderExpenseRows(c.billedExpenseList)}
         </div>
+        ${hasPaid ? `
+        <div class="billing-card-row">
+          <span class="billing-label" style="color:var(--success)">已还金额</span>
+          <span style="color:var(--success);font-weight:500">-${fmt(paidAmount)}</span>
+        </div>
+        <div class="billing-card-row" style="border-top:2px solid var(--border);padding-top:6px">
+          <span class="billing-label" style="font-weight:600">剩余需还</span>
+          <span style="color:var(--danger);font-weight:700;font-size:1.05rem">${fmt(netOwed)}</span>
+        </div>
+        ` : ''}
         <div class="billing-card-row${hasUnpaid ? ' billing-row-toggle' : ''}" data-toggle-id="${unpaidId}" style="cursor:${hasUnpaid ? 'pointer' : 'default'}">
           <span class="billing-label">本期未出账
             ${hasUnpaid ? `<span class="billing-toggle" id="arrow-${unpaidId}">▼</span>` : ''}
