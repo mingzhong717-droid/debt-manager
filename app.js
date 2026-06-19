@@ -1624,9 +1624,24 @@ function addExpense() {
     return;
   }
 
-  // 拦截主动还款：还款应该更新 paidAmount 而非录入消费
+  // 检测到主动还款：自动更新对应信用卡的 paidAmount
   if (isRepayment({ category, note })) {
-    alert('⚠️ 检测到这是一笔"还款"记录。\n\n还款不应录入消费列表，请到对应信用卡的"已还金额"中更新。\n如果是商家退款，请将分类改为"退款"而非"转账还款"。');
+    const repayCardId = PAYMENT_TO_CARD[payment];
+    if (repayCardId && DATA) {
+      let targetAcc = null;
+      DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === repayCardId) targetAcc = a; }));
+      if (targetAcc) {
+        if (confirm(`检测到还款 ¥${amount}，确认更新${targetAcc.name}的已还金额？`)) {
+          targetAcc.paidAmount = (targetAcc.paidAmount || 0) + amount;
+          saveData();
+          refreshAfterExpenseChange();
+          showToast(`✅ 已更新${targetAcc.name}已还金额 +${fmt(amount)}`);
+          closeAddExpense();
+        }
+        return;
+      }
+    }
+    alert('⚠️ 检测到还款记录但无法匹配信用卡，请手动更新已还金额。\n如果是商家退款，请将分类改为"退款"。');
     return;
   }
 
@@ -2619,11 +2634,14 @@ document.getElementById('aiTextInput').addEventListener('keydown', (e) => {
 loadAIChatHistory();
 if (aiChatBubbles.length > 0) renderAIChat();
 
+let _aiSending = false; // 防重复发送锁
 async function handleAISend() {
+  if (_aiSending) return; // 正在发送中，忽略重复调用
   const text   = document.getElementById('aiTextInput').value.trim();
   const hasImg = aiImageList.length > 0;
   if (!text && !hasImg) { setAIStatus('请输入消费描述或上传图片', 'error'); return; }
 
+  _aiSending = true;
   const btn = document.getElementById('aiSendBtn');
   btn.disabled = true;
   btn.classList.add('loading');
@@ -2741,6 +2759,7 @@ async function handleAISend() {
     renderAIChat();
     setAIStatus(`❌ 识别失败：${err.message}`, 'error');
   } finally {
+    _aiSending = false; // 释放发送锁
     btn.disabled = false;
     btn.classList.remove('loading');
     document.getElementById('aiSendIcon').textContent = '➤';
@@ -3165,11 +3184,27 @@ if (!data || !data.amount || data.amount === 0) {
 showToast('❌ 金额无效，请重新描述');
 return;
 }
-// 拦截主动还款
-if (isRepayment({ category: data.category, note: data.note })) {
-showToast('⚠️ 检测到还款记录，已跳过。还款请更新"已还金额"，商家退款请分类为"退款"');
-return;
-}
+  // 检测到主动还款：自动更新对应信用卡的 paidAmount
+  if (isRepayment({ category: data.category, note: data.note })) {
+    const cardId = PAYMENT_TO_CARD[data.payment];
+    if (cardId && DATA) {
+      let targetAcc = null;
+      DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === cardId) targetAcc = a; }));
+      if (targetAcc) {
+        targetAcc.paidAmount = (targetAcc.paidAmount || 0) + Math.abs(data.amount);
+        await saveData();
+        refreshAfterExpenseChange();
+        showToast(`✅ 已自动更新${targetAcc.name}已还金额 +${fmt(Math.abs(data.amount))}`);
+        if (bubbleIdx !== undefined && aiChatBubbles[bubbleIdx]) {
+          aiChatBubbles[bubbleIdx].confirmed = true;
+          renderAIChat(true);
+        }
+        return;
+      }
+    }
+    showToast('⚠️ 检测到还款记录但无法匹配信用卡，请手动更新已还金额');
+    return;
+  }
 // 重复检测提醒（改为拦截，不再仅提示）
 const dup = checkDuplicateExpense(data, bubbleIdx);
 if (dup) {
