@@ -752,7 +752,7 @@ function renderBarChart() {
         y: {
           ticks: {
             color: '#8892b0',
-            callback: (v) => '¥' + (v / 1000).toFixed(0) + 'k'
+            callback: (v) => v >= 1000 ? '¥' + (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : fmt(v)
           },
           grid: { color: 'rgba(46,50,80,0.5)' }
         }
@@ -1274,7 +1274,19 @@ async function loadExpensesFromCloud() {
   try {
     const rows = await sbFetch(EXPENSE_TABLE + '?order=date.desc&limit=500');
     if (rows && Array.isArray(rows)) {
-      const expenses = rows.map(r => ({ id: r.id, date: r.date, amount: r.amount, category: r.category, payment: r.payment, note: r.note }));
+      const expenses = rows.map(r => {
+        // 重新计算本地字段（云端不存储这些字段）
+        const cardId = PAYMENT_TO_CARD[r.payment] || null;
+        const billing = cardId ? getBillingCycle(cardId, r.date) : null;
+        return {
+          id: r.id, date: r.date, amount: r.amount,
+          category: r.category, payment: r.payment, note: r.note,
+          cardId,
+          billMonth: billing?.billMonth || null,
+          dueDate: billing?.dueDate?.format('YYYY-MM-DD') || null,
+          isCashAdvance: checkCashAdvance(r.amount, r.note, r.payment)
+        };
+      });
       // 云端成功才覆盖本地，同时写 localStorage + IDB 双备份
       localStorage.setItem('expenses', JSON.stringify(expenses));
       await idbSave('expenses', expenses);
@@ -1918,11 +1930,19 @@ function renderBillingStatus() {
     }
 
     // 本周期内的消费（未出账）
-    const unpaidExpenses = expenses.filter(e =>
-      e.cardId === cardId &&
-      dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
-      dayjs(e.date).isBefore(cycleEnd.add(1, 'day'))
-    );
+    // 兜底：cardId匹配 OR payment名称包含银行简称（防止AI录入时名称不完全一致）
+    const cardName = cfg.name; // 如"广州银行信用卡"
+    // 特殊处理：农业银行简称是"农行"而非"农业"
+    const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
+    const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', ''); // 如"广州"
+    const unpaidExpenses = expenses.filter(e => {
+      const dateOk = dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
+                     dayjs(e.date).isBefore(cycleEnd.add(1, 'day'));
+      if (!dateOk) return false;
+      // 优先cardId精确匹配，其次payment名称模糊匹配
+      return e.cardId === cardId ||
+             (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
+    });
     const unpaidTotal = unpaidExpenses.reduce((s, e) => s + e.amount, 0);
 
     // 下次还款日：优先读 data.json 里的 currentDueDate（真实数据），避免推算错误
@@ -1967,7 +1987,7 @@ function renderBillingStatus() {
           <span class="billing-label">已出账待还
             ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
           </span>
-          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.minPayment > 0 ? '¥' + c.minPayment.toFixed(2) : '暂无'}</span>
+          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.minPayment > 0 ? fmt(c.minPayment) : '暂无'}</span>
         </div>
         <div class="billing-card-row">
           <span class="billing-label">本期未出账</span>
@@ -3053,9 +3073,9 @@ async function runAIAnalysis() {
   const byCategory = {};
   expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
   const topCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5)
-    .map(([k, v]) => `${k}: ¥${v.toFixed(0)}`).join('、');
+    .map(([k, v]) => `${k}: ¥${v.toFixed(2)}`).join('、');
 
-  const prompt = `用户 ${analysisMonth} 月消费数据：总支出 ¥${total.toFixed(0)}，共 ${expenses.length} 笔。
+  const prompt = `用户 ${analysisMonth} 月消费数据：总支出 ¥${total.toFixed(2)}，共 ${expenses.length} 笔。
 主要分类：${topCats || '暂无'}。
 请用 3-4 句话给出消费分析和节省建议，语气友好，重点突出。`;
 
