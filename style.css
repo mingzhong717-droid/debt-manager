@@ -1549,6 +1549,20 @@ input:focus, select:focus, textarea:focus {
 .ai-skip-btn:hover { background: #e9ecf5; color: var(--text); }
 .ai-batch-done .ai-intent-tag { opacity: 0.7; }
 .ai-batch-done .ai-parsed-card { opacity: 0.6; }
+.ai-dup-warning {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #856404;
+  line-height: 1.4;
+}
+.ai-dup-card {
+  border-color: #ffc107 !important;
+  background: #fffbeb;
+}
 .ai-edit-btn {
   flex: 0 0 auto;
   padding: 10px 16px;

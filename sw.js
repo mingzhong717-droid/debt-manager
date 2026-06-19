@@ -8,7 +8,7 @@
      - Supabase API 请求            → 直接放行，不缓存
    ============================================================ */
 
-const CACHE_NAME = 'debt-manager-v27';
+const CACHE_NAME = 'debt-manager-v28';
 
 // 只缓存不常变的静态资源（CDN + 图标）
 const STATIC_CACHE = [

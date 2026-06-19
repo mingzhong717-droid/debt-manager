@@ -2937,7 +2937,7 @@ function renderAIChat() {
           // 编辑模式已改为弹窗，这里只做展示
           return `<div class="ai-bubble ai-bubble-ai">
             <div class="ai-intent-tag">🛒 录入消费</div>
-            ${renderExpenseDisplayCard(p)}
+            ${renderExpenseDisplayCard(p, bubbleIdx)}
             <div class="ai-batch-actions">
               <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入</button>
               <button class="ai-edit-btn" onclick="editBatchItem(${bubbleIdx})">✏️ 编辑</button>
@@ -2948,7 +2948,7 @@ function renderAIChat() {
         // 单条（文字输入路径）
         return `<div class="ai-bubble ai-bubble-ai">
           <div class="ai-intent-tag">🛒 录入消费</div>
-          ${renderExpenseDisplayCard(p)}
+          ${renderExpenseDisplayCard(p, bubbleIdx)}
           <div class="ai-batch-actions">
             <button class="ai-confirm-btn" onclick="addExpenseFromAI(aiChatBubbles[${bubbleIdx}].parsed, ${bubbleIdx})">✅ 确认录入</button>
             <button class="ai-edit-btn" onclick="editBatchItem(${bubbleIdx})">✏️ 编辑</button>
@@ -3022,7 +3022,12 @@ if (!data || !data.amount || data.amount === 0) {
 showToast('❌ 金额无效，请重新描述');
 return;
 }
-  const cardId = PAYMENT_TO_CARD[data.payment];
+// 重复检测提醒
+const dup = checkDuplicateExpense(data, bubbleIdx);
+if (dup) {
+showToast(`⚠️ 疑似重复：${data.date} ¥${data.amount} ${data.payment} 可能已录入，请注意检查`);
+}
+const cardId = PAYMENT_TO_CARD[data.payment];
   const billing = cardId ? getBillingCycle(cardId, data.date) : null;
   const expense = {
     id: Date.now(),
@@ -3064,7 +3069,28 @@ function skipBatchItem(bubbleIdx) {
 }
 
 // ===== AI解析消费卡片：展示 / 编辑 =====
-function renderExpenseDisplayCard(p) {
+// ===== 重复消费检测 =====
+// 检查解析的消费是否与已保存的消费记录重复（日期+金额+支付方式）
+function checkDuplicateExpense(p, excludeBubbleIdx) {
+  const existing = getExpenses();
+  // 同批次内也检查（避免多张图重复识别同一条）
+  const batchParsed = aiChatBubbles
+    .filter((b, i) => i !== excludeBubbleIdx && b.parsed && b.parsed.intent === 'add_expense' && b.confirmed)
+    .map(b => b.parsed);
+  const allExisting = [
+    ...existing.map(e => ({ date: e.date, amount: e.amount, payment: e.payment })),
+    ...batchParsed,
+  ];
+  return allExisting.find(e =>
+    e.date === p.date &&
+    Math.abs(e.amount - p.amount) < 0.01 &&
+    e.payment === p.payment
+  );
+}
+
+function renderExpenseDisplayCard(p, bubbleIdx) {
+  const dup = bubbleIdx !== undefined ? checkDuplicateExpense(p, bubbleIdx) : null;
+  const dupBanner = dup ? `<div class="ai-dup-warning">⚠️ 疑似重复：${p.date} ¥${p.amount} ${p.payment} 已存在，确认录入前请检查</div>` : '';
   const rows = [
     `<div class="ai-parsed-row"><span>📅 日期</span><strong>${escHtml(p.date || '-')}</strong></div>`,
     `<div class="ai-parsed-row"><span>💰 金额</span><strong style="color:var(--warning)">¥${p.amount}</strong></div>`,
@@ -3072,7 +3098,7 @@ function renderExpenseDisplayCard(p) {
     `<div class="ai-parsed-row"><span>💳 支付</span><strong>${escHtml(p.payment || '微信/支付宝')}</strong></div>`,
   ];
   if (p.note) rows.push(`<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>`);
-  return `<div class="ai-parsed-card">${rows.join('')}</div>`;
+  return `${dupBanner}<div class="ai-parsed-card${dup ? ' ai-dup-card' : ''}">${rows.join('')}</div>`;
 }
 
 function editBatchItem(bubbleIdx) {
