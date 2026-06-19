@@ -32,6 +32,23 @@ const PAYMENT_TO_CARD = {
   '美团月付':      'meituan-yuepay-1',
 };
 
+// 信用卡尾号 → 账户ID + 支付名称（用于从备注中自动识别归属）
+const CARD_TAIL_MAP = {
+  '7347': { cardId: 'cmb-credit-1', payment: '招商信用卡' },
+  // 如有其他卡尾号可在此添加
+};
+
+// 根据备注中的卡号尾号自动识别归属信用卡
+function resolveCardFromNote(note, currentPayment) {
+  // 如果 payment 已明确是信用卡，不需要修正
+  if (PAYMENT_TO_CARD[currentPayment]) return null;
+  if (!note) return null;
+  for (const [tail, info] of Object.entries(CARD_TAIL_MAP)) {
+    if (note.includes(tail)) return info;
+  }
+  return null;
+}
+
 // ===== 全局状态 =====
 let DATA = null;
 let pieChart = null;
@@ -1444,15 +1461,22 @@ async function loadExpensesFromCloud() {
     if (rows && Array.isArray(rows)) {
       const expenses = rows.map(r => {
         // 重新计算本地字段（云端不存储这些字段）
-        const cardId = PAYMENT_TO_CARD[r.payment] || null;
+        // 优先用 PAYMENT_TO_CARD 映射，如果 payment 不明确则从备注中识别卡号尾号
+        let payment = r.payment;
+        let cardId = PAYMENT_TO_CARD[payment] || null;
+        const resolved = resolveCardFromNote(r.note, payment);
+        if (resolved) {
+          cardId = resolved.cardId;
+          payment = resolved.payment;
+        }
         const billing = cardId ? getBillingCycle(cardId, r.date) : null;
         return {
           id: r.id, date: r.date, amount: r.amount,
-          category: r.category, payment: r.payment, note: r.note,
+          category: r.category, payment, note: r.note,
           cardId,
           billMonth: billing?.billMonth || null,
           dueDate: billing?.dueDate?.format('YYYY-MM-DD') || null,
-          isCashAdvance: checkCashAdvance(r.amount, r.note, r.payment)
+          isCashAdvance: checkCashAdvance(r.amount, r.note, payment)
         };
       });
       // 云端成功才覆盖本地，同时写 localStorage + IDB 双备份
@@ -1477,7 +1501,16 @@ async function loadExpensesFromCloud() {
 }
 
 function getExpenses() {
-  return JSON.parse(localStorage.getItem('expenses') || '[]');
+  const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+  // 运行时修正：备注含已知卡号尾号但 payment 未正确标记的记录
+  expenses.forEach(e => {
+    const resolved = resolveCardFromNote(e.note, e.payment);
+    if (resolved) {
+      e.payment = resolved.payment;
+      e.cardId = resolved.cardId;
+    }
+  });
+  return expenses;
 }
 
 async function saveExpenses(expenses) {
