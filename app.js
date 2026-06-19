@@ -1904,11 +1904,11 @@ function renderExpenseOverview() {
   Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
     let cycleStart, cycleEnd;
     if (now.date() <= cfg.billDay) {
-      cycleEnd   = now.date(cfg.billDay);
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1);
+      cycleEnd   = now.date(cfg.billDay).startOf('day');
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
     } else {
-      cycleStart = now.date(cfg.billDay + 1);
-      cycleEnd   = now.add(1, 'month').date(cfg.billDay);
+      cycleStart = now.date(cfg.billDay + 1).startOf('day');
+      cycleEnd   = now.add(1, 'month').date(cfg.billDay).startOf('day');
     }
     cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, cycleStart, cycleEnd };
   });
