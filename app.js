@@ -18,7 +18,7 @@ const CARD_BILLING = {
   'abc-credit-1':       { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
   'cmbc-credit-1':      { name: '民生银行信用卡', billDay: 19, dueDay: 9,  dueDayNextMonth: true  },
   'alipay-huabei-1':    { name: '花呗',         billDay: 1,  dueDay: 8,  dueDayNextMonth: false },
-  'meituan-yuepay-1':   { name: '美团月付',      billDay: 24, dueDay: 3,  dueDayNextMonth: true  },
+  'meituan-yuepay-1':   { name: '美团月付',      billDay: 25, dueDay: 3,  dueDayNextMonth: true  },
 };
 
 // 支付方式名称 → 账户ID 映射（用于消费联动）
