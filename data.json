@@ -63,7 +63,7 @@
           "id": "cmb-credit-1",
           "type": "credit",
           "name": "招商信用卡",
-          "totalDebt": 23572.03,
+          "totalDebt": 19617.24,
           "creditLimit": 60000,
           "billDay": 3,
           "dueDay": 21,
