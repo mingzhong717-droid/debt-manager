@@ -2127,14 +2127,17 @@ function renderExpenseOverview() {
   Object.entries(cardStats).forEach(([cardId, stat]) => {
     if (stat.total === 0 && stat.refund === 0) return;
 
-    // 找信用卡额度
-    let creditLimit = 0;
+    // 找信用卡账户数据（额度 + 计算真实已用）
+    let accData = null;
     DATA.banks.forEach(b => b.accounts.forEach(a => {
-      if (a.id === cardId) creditLimit = a.creditLimit || 0;
+      if (a.id === cardId) accData = a;
     }));
+    const creditLimit = accData?.creditLimit || 0;
 
     const net = stat.total - stat.refund;
-    const usedPct = creditLimit > 0 ? Math.min(net / creditLimit, 1) : 0;
+    // 额度进度条使用完整已用额度（账单剩余+分期本金+未出账），与总览页一致
+    const usedCredit = accData ? calcUsedCredit(accData) : net;
+    const usedPct = creditLimit > 0 ? Math.min(usedCredit / creditLimit, 1) : 0;
     const barColor = usedPct > 0.8 ? 'var(--danger)' : usedPct > 0.5 ? 'var(--warning)' : 'var(--accent)';
 
     html += `
