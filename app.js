@@ -2115,7 +2115,6 @@ function renderBillingStatus() {
     // 未来分期待还金额（不含当期，当期已在账单内）
     const futureInstallments = (c.accData.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
     const hasFutureInst = futureInstallments > 0;
-    const hasUnpaid = c.unpaidTotal > 0;
     const totalRemaining = netOwed + futureInstallments + (hasUnpaid ? c.unpaidTotal : 0);
 
     html += `
