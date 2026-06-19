@@ -2093,20 +2093,29 @@ function renderBillingStatus() {
     const hasBilled = c.billedExpenseList.length > 0;
     const hasUnpaid = c.unpaidExpenseList.length > 0;
 
+    // 已还款金额（data.json 里记录的本期已还）
+    const paidAmount = c.accData.paidAmount || 0;
+    const netOwed = Math.max(0, c.billAmount - paidAmount);
+    const billedAmountTxt = c.billAmount > 0
+      ? (paidAmount > 0
+          ? `<span style="color:var(--danger);font-weight:600">${fmt(netOwed)}</span><span style="font-size:0.72rem;color:var(--text-muted);margin-left:4px">（账单${fmt(c.billAmount)}，已还${fmt(paidAmount)}）</span>`
+          : `<span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${fmt(c.billAmount)}</span>`)
+      : '<span class="billing-value">暂无</span>';
+
     html += `
       <div class="billing-card">
         <div class="billing-card-name">${c.cfg.name}</div>
-        <div class="billing-card-row" style="cursor:${hasBilled ? 'pointer' : 'default'}" onclick="${hasBilled ? `toggleBillingDetail('${billedId}')` : ''}">
+        <div class="billing-card-row${hasBilled ? ' billing-row-toggle' : ''}" data-toggle-id="${billedId}" style="cursor:${hasBilled ? 'pointer' : 'default'}">
           <span class="billing-label">已出账待还
             ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
             ${hasBilled ? `<span class="billing-toggle" id="arrow-${billedId}">▼</span>` : ''}
           </span>
-          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.billAmount > 0 ? fmt(c.billAmount) : '暂无'}</span>
+          <span>${billedAmountTxt}</span>
         </div>
         <div class="billing-detail" id="${billedId}">
           ${renderExpenseRows(c.billedExpenseList)}
         </div>
-        <div class="billing-card-row" style="cursor:${hasUnpaid ? 'pointer' : 'default'}" onclick="${hasUnpaid ? `toggleBillingDetail('${unpaidId}')` : ''}">
+        <div class="billing-card-row${hasUnpaid ? ' billing-row-toggle' : ''}" data-toggle-id="${unpaidId}" style="cursor:${hasUnpaid ? 'pointer' : 'default'}">
           <span class="billing-label">本期未出账
             ${hasUnpaid ? `<span class="billing-toggle" id="arrow-${unpaidId}">▼</span>` : ''}
           </span>
@@ -2125,6 +2134,14 @@ function renderBillingStatus() {
   });
 
   container.innerHTML = html || '<div style="color:var(--text-muted);padding:16px">暂无信用卡数据</div>';
+
+  // 事件委托：点击 billing-row-toggle 展开/收起明细（避免 onclick 属性单引号冲突）
+  container.querySelectorAll('.billing-row-toggle').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = row.getAttribute('data-toggle-id');
+      toggleBillingDetail(id);
+    });
+  });
 }
 
 // ===== 账单明细展开/收起 =====

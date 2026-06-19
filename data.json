@@ -69,6 +69,7 @@
           "dueDay": 21,
           "minPayment": 3954.79,
           "currentBillAmount": 23572.03,
+          "paidAmount": 3954.79,
           "currentBillStart": "2026-05-04",
           "currentBillEnd": "2026-06-03",
           "currentDueDate": "2026-06-21",
