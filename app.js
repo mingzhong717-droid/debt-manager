@@ -1897,18 +1897,29 @@ function renderExpenseOverview() {
 
   const expenses = getExpenses();
   const now = today;
-  const thisMonth = now.format('YYYY-MM');
 
-  // 按信用卡分组统计本月消费
+  // 方案B：按账单周期统计"当前未出账单"消费
+  // 每张卡独立计算本周期（上个账单日+1 ~ 本账单日），与 renderBillingStatus 逻辑一致
   const cardStats = {};
   Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
-    cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0 };
+    let cycleStart, cycleEnd;
+    if (now.date() <= cfg.billDay) {
+      cycleEnd   = now.date(cfg.billDay);
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1);
+    } else {
+      cycleStart = now.date(cfg.billDay + 1);
+      cycleEnd   = now.add(1, 'month').date(cfg.billDay);
+    }
+    cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, cycleStart, cycleEnd };
   });
 
   expenses.forEach(e => {
-    if (!e.date || e.date.slice(0, 7) !== thisMonth) return;
+    if (!e.date) return;
     const cardId = e.cardId;
     if (!cardStats[cardId]) return;
+    const { cycleStart, cycleEnd } = cardStats[cardId];
+    const d = dayjs(e.date);
+    if (d.isBefore(cycleStart) || d.isAfter(cycleEnd)) return;
     if (e.amount < 0) {
       cardStats[cardId].refund += Math.abs(e.amount);
     } else {
@@ -1925,7 +1936,7 @@ function renderExpenseOverview() {
   let html = `
     <div class="exp-overview-header">
       <div class="exp-overview-total">
-        <span class="exp-ov-label">本月总消费</span>
+        <span class="exp-ov-label">本期未出账消费</span>
         <span class="exp-ov-amount">${fmt(grandNet)}</span>
       </div>
       ${grandRefund > 0 ? `<div class="exp-ov-refund">退款 ${fmt(grandRefund)}</div>` : ''}
