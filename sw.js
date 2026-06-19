@@ -1,5 +1,5 @@
 /* ============================================================
-   Service Worker - 个人负债管理中心  v18
+   Service Worker - 个人负债管理中心  v19
    更新策略（解决 PWA 全屏模式下更新不生效问题）：
      - 安装时立即 skipWaiting，激活时立即 clients.claim()
      - 激活后主动通知所有客户端"有新版本，请刷新"
@@ -8,7 +8,7 @@
      - Supabase API 请求            → 直接放行，不缓存
    ============================================================ */
 
-const CACHE_NAME = 'debt-manager-v18';
+const CACHE_NAME = 'debt-manager-v19';
 
 // 只缓存不常变的静态资源（CDN + 图标）
 const STATIC_CACHE = [

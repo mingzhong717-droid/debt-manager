@@ -384,8 +384,8 @@ function calcSummary() {
         if (!nextDue || dueDate.isBefore(nextDue)) nextDue = dueDate;
 
       } else if (acc.type === 'credit') {
-        // 信用卡：用统一函数计算净负债
-        totalDebt += getNetDebt(acc);
+        // 信用卡：直接用 totalDebt（已扣除已还金额）
+        totalDebt += acc.totalDebt || 0;
 
         // 月供：当期账单（含分期月供），减去已还部分
         const billAmount = acc.currentBillAmount || acc.minPayment || 0;
@@ -538,7 +538,7 @@ function renderBankCards() {
   container.innerHTML = '';
 
   DATA.banks.forEach((bank, i) => {
-    const bankTotal = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
+    const bankTotal = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
 
     const card = document.createElement('div');
     card.className = 'bank-card';
@@ -553,11 +553,10 @@ function renderBankCards() {
       if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
       const daysLeft = dueDate.diff(now, 'day');
       const isUrgent = daysLeft <= 5;
-      const netDebt = getNetDebt(acc);
 
       let extraInfo = '';
       if (acc.type === 'credit') {
-        const usedPct = netDebt / acc.creditLimit;
+        const usedPct = acc.totalDebt / acc.creditLimit;
         extraInfo = `
           <div class="credit-bar">
             <div class="credit-bar-fill" style="width:${Math.min(usedPct * 100, 100)}%"></div>
@@ -580,7 +579,7 @@ function renderBankCards() {
         <div class="account-item">
           <div class="account-header">
             <span class="account-name">${acc.name}</span>
-            <span class="account-amount">${fmt(netDebt)}</span>
+            <span class="account-amount">${fmt(acc.totalDebt)}</span>
           </div>
           <div class="account-meta">
             <span>还款日 <span class="due-badge ${isUrgent ? 'urgent' : ''}">${dueDay}号 (${daysLeft}天后)</span></span>
@@ -615,7 +614,7 @@ function renderPieChart() {
   const colors = [];
 
   DATA.banks.forEach(bank => {
-    const total = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
+    const total = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
     if (total > 0) {
       labels.push(bank.shortName);
       values.push(total);
