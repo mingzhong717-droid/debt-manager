@@ -351,16 +351,53 @@ function init() {
   setTimeout(flushPendingSaves, 2000);
 }
 
-// ===== 获取账户净负债（扣除已还金额）=====
+// ===== 获取未出账消费总额 =====
+function getUnpaidTotal(cardId) {
+  const cfg = CARD_BILLING[cardId];
+  if (!cfg) return 0;
+  const expenses = getExpenses();
+  const now = today;
+
+  // 当前账单周期：上个账单日 ~ 本账单日
+  let cycleStart, cycleEnd;
+  if (now.date() <= cfg.billDay) {
+    cycleEnd = now.date(cfg.billDay).startOf('day');
+    cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
+  } else {
+    cycleStart = now.date(cfg.billDay + 1).startOf('day');
+    cycleEnd = now.add(1, 'month').date(cfg.billDay).startOf('day');
+  }
+
+  const cardName = cfg.name;
+  const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
+  const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', '');
+
+  const unpaidExpenses = expenses.filter(e => {
+    const dateOk = dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
+                   dayjs(e.date).isBefore(cycleEnd.add(1, 'day'));
+    if (!dateOk) return false;
+    return e.cardId === cardId ||
+           (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
+  });
+
+  return unpaidExpenses.reduce((s, e) => s + e.amount, 0);
+}
+
+// ===== 获取账户净负债（全部剩余待还）=====
 function getNetDebt(acc) {
   if (acc.type === 'credit') {
-    // 信用卡：真实负债 = 分期剩余余额之和 + 当期未分期账单余额 - 已还金额
-    const instTotal = (acc.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
+    // 账单剩余 = 当期账单 - 已还
     const billAmount = acc.currentBillAmount || acc.minPayment || 0;
-    const instMonthly = (acc.installments || []).reduce((s, i) => s + (i.monthlyPayment || 0), 0);
-    const nonInstBill = Math.max(0, billAmount - instMonthly);
     const paidAmount = acc.paidAmount || 0;
-    return Math.max(0, instTotal + nonInstBill - paidAmount);
+    const billRemaining = Math.max(0, billAmount - paidAmount);
+
+    // 未来分期待还（remainingAmount 不含当期，当期已在账单内）
+    const futureInstallments = (acc.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
+
+    // 未出账消费
+    const unpaidTotal = getUnpaidTotal(acc.id);
+
+    return billRemaining + futureInstallments + unpaidTotal;
   }
   return acc.totalDebt || 0;
 }
@@ -384,8 +421,8 @@ function calcSummary() {
         if (!nextDue || dueDate.isBefore(nextDue)) nextDue = dueDate;
 
       } else if (acc.type === 'credit') {
-        // 信用卡：直接用 totalDebt（已扣除已还金额）
-        totalDebt += acc.totalDebt || 0;
+        // 信用卡：用计算值（账单剩余 + 分期待还 + 未出账消费）
+        totalDebt += getNetDebt(acc);
 
         // 月供：当期账单（含分期月供），减去已还部分
         const billAmount = acc.currentBillAmount || acc.minPayment || 0;
@@ -538,7 +575,7 @@ function renderBankCards() {
   container.innerHTML = '';
 
   DATA.banks.forEach((bank, i) => {
-    const bankTotal = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
+    const bankTotal = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
 
     const card = document.createElement('div');
     card.className = 'bank-card';
@@ -581,7 +618,7 @@ function renderBankCards() {
         <div class="account-item">
           <div class="account-header">
             <span class="account-name">${acc.name}</span>
-            <span class="account-amount">${fmt(acc.totalDebt)}</span>
+            <span class="account-amount">${fmt(getNetDebt(acc))}</span>
           </div>
           <div class="account-meta">
             <span>还款日 <span class="due-badge ${isUrgent ? 'urgent' : ''}">${dueDay}号 (${daysLeft}天后)</span></span>
@@ -616,7 +653,7 @@ function renderPieChart() {
   const colors = [];
 
   DATA.banks.forEach(bank => {
-    const total = bank.accounts.reduce((s, a) => s + (a.totalDebt || 0), 0);
+    const total = bank.accounts.reduce((s, a) => s + getNetDebt(a), 0);
     if (total > 0) {
       labels.push(bank.shortName);
       values.push(total);
@@ -1263,9 +1300,10 @@ function calcWhatIf() {
   const monthlyRate = acc.type === 'loan' ? rate / 12 : rate * 30;
 
   // 基准场景
-  const baseResult = simulatePayoff(acc.totalDebt, acc.monthlyPayment || acc.minPayment, monthlyRate);
+  const currentDebt = getNetDebt(acc);
+  const baseResult = simulatePayoff(currentDebt, acc.monthlyPayment || acc.minPayment, monthlyRate);
   // 优化场景
-  const newBalance = Math.max(0, acc.totalDebt - lump);
+  const newBalance = Math.max(0, currentDebt - lump);
   const newPayment = (acc.monthlyPayment || acc.minPayment) + extra;
   const optResult = simulatePayoff(newBalance, newPayment, monthlyRate);
 
