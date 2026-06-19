@@ -2029,6 +2029,10 @@ function renderBillingStatus() {
     });
     const unpaidTotal = unpaidExpenseList.reduce((s, e) => s + e.amount, 0);
 
+    // 账单日期范围（需先声明，billedExpenseList 依赖它）
+    const billStart = accData.currentBillStart ? dayjs(accData.currentBillStart) : null;
+    const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
+
     // 已出账单期间的消费明细
     const billedExpenseList = (billStart && billEnd) ? expenses.filter(e => {
       const d = dayjs(e.date);
@@ -2049,9 +2053,6 @@ function renderBillingStatus() {
     const daysUntilDue = dueDate ? dueDate.diff(now, 'day') : null;
     const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
     const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
-    // 账单日期范围
-    const billStart = accData.currentBillStart ? dayjs(accData.currentBillStart) : null;
-    const billEnd   = accData.currentBillEnd   ? dayjs(accData.currentBillEnd)   : null;
 
     cards.push({
       cardId, cfg, accData,
