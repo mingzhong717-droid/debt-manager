@@ -358,14 +358,17 @@ function getUnpaidTotal(cardId) {
   const expenses = getExpenses();
   const now = today;
 
-  // 当前账单周期：上个账单日 ~ 本账单日
+  // 当前账单周期：账单日当天(含) ~ 下个账单日前一天(含)
+  // 信用卡账单日当天的消费归入下一期账单（即当前未出账）
   let cycleStart, cycleEnd;
-  if (now.date() <= cfg.billDay) {
-    cycleEnd = now.date(cfg.billDay).startOf('day');
-    cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
+  if (now.date() < cfg.billDay) {
+    // 今天在账单日之前，当前周期是上月账单日 ~ 本月账单日前一天
+    cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
+    cycleEnd = now.date(cfg.billDay - 1).endOf('day');
   } else {
-    cycleStart = now.date(cfg.billDay + 1).startOf('day');
-    cycleEnd = now.add(1, 'month').date(cfg.billDay).startOf('day');
+    // 今天 >= 账单日，当前周期是本月账单日 ~ 下月账单日前一天
+    cycleStart = now.date(cfg.billDay).startOf('day');
+    cycleEnd = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
   }
 
   const cardName = cfg.name;
@@ -373,8 +376,9 @@ function getUnpaidTotal(cardId) {
   const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', '');
 
   const unpaidExpenses = expenses.filter(e => {
-    const dateOk = dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
-                   dayjs(e.date).isBefore(cycleEnd.add(1, 'day'));
+    const d = dayjs(e.date);
+    const dateOk = (d.isSame(cycleStart, 'day') || d.isAfter(cycleStart)) &&
+                   (d.isSame(cycleEnd, 'day') || d.isBefore(cycleEnd));
     if (!dateOk) return false;
     return e.cardId === cardId ||
            (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
@@ -1481,9 +1485,10 @@ function getBillingCycle(cardId, expenseDate) {
   const cfg = CARD_BILLING[cardId];
   if (!cfg) return null;
   const d = dayjs(expenseDate);
-  // 账单日当天及之前 → 属于本月账单；账单日之后 → 属于下月账单
+  // 账单日当天的消费归入下一期账单（即未出账）
+  // 账单日之前 → 属于本月账单；账单日当天及之后 → 属于下月账单
   let billMonth;
-  if (d.date() <= cfg.billDay) {
+  if (d.date() < cfg.billDay) {
     billMonth = d.format('YYYY-MM');
   } else {
     billMonth = d.add(1, 'month').format('YYYY-MM');
@@ -1975,12 +1980,12 @@ function renderExpenseOverview() {
   const cardStats = {};
   Object.entries(CARD_BILLING).forEach(([cardId, cfg]) => {
     let cycleStart, cycleEnd;
-    if (now.date() <= cfg.billDay) {
-      cycleEnd   = now.date(cfg.billDay).startOf('day');
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
+    if (now.date() < cfg.billDay) {
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
+      cycleEnd   = now.date(cfg.billDay - 1).endOf('day');
     } else {
-      cycleStart = now.date(cfg.billDay + 1).startOf('day');
-      cycleEnd   = now.add(1, 'month').date(cfg.billDay).startOf('day');
+      cycleStart = now.date(cfg.billDay).startOf('day');
+      cycleEnd   = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
     }
     cardStats[cardId] = { name: cfg.name, total: 0, count: 0, refund: 0, cycleStart, cycleEnd };
   });
@@ -2076,14 +2081,14 @@ function renderBillingStatus() {
     DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === cardId) accData = a; }));
     if (!accData) return;
 
-    // 当前账单周期：上个账单日 ~ 本账单日
+    // 当前账单周期：账单日当天(含) ~ 下个账单日前一天(含)
     let cycleStart, cycleEnd;
-    if (now.date() <= cfg.billDay) {
-      cycleEnd = now.date(cfg.billDay).startOf('day');
-      cycleStart = now.subtract(1, 'month').date(cfg.billDay + 1).startOf('day');
+    if (now.date() < cfg.billDay) {
+      cycleStart = now.subtract(1, 'month').date(cfg.billDay).startOf('day');
+      cycleEnd = now.date(cfg.billDay - 1).endOf('day');
     } else {
-      cycleStart = now.date(cfg.billDay + 1).startOf('day');
-      cycleEnd = now.add(1, 'month').date(cfg.billDay).startOf('day');
+      cycleStart = now.date(cfg.billDay).startOf('day');
+      cycleEnd = now.add(1, 'month').date(cfg.billDay - 1).endOf('day');
     }
 
     // 本周期内的消费（未出账）
@@ -2093,8 +2098,9 @@ function renderBillingStatus() {
     const BANK_SHORT_MAP = { 'abc-credit-1': '农行' };
     const bankShort = BANK_SHORT_MAP[cardId] || cardName.replace('信用卡', '').replace('银行', ''); // 如"广州"
     const unpaidExpenseList = expenses.filter(e => {
-      const dateOk = dayjs(e.date).isAfter(cycleStart.subtract(1, 'day')) &&
-                     dayjs(e.date).isBefore(cycleEnd.add(1, 'day'));
+      const d = dayjs(e.date);
+      const dateOk = (d.isSame(cycleStart, 'day') || d.isAfter(cycleStart)) &&
+                     (d.isSame(cycleEnd, 'day') || d.isBefore(cycleEnd));
       if (!dateOk) return false;
       return e.cardId === cardId ||
              (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
