@@ -2150,6 +2150,12 @@ function toggleBillingDetail(id) {
   const arrow = document.getElementById('arrow-' + id);
   if (!el) return;
   const isOpen = el.classList.toggle('open');
+  // 用 inline style 强制覆盖，避免旧版 CSS display:none 优先级问题
+  if (isOpen) {
+    el.style.cssText = 'display:block;max-height:2400px;overflow-y:auto;background:var(--bg);border-radius:6px;margin:2px 0 6px;';
+  } else {
+    el.style.cssText = 'display:none;max-height:0;margin:0;';
+  }
   if (arrow) arrow.style.transform = isOpen ? 'rotate(180deg)' : '';
 }
 
