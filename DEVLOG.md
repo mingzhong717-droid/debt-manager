@@ -299,6 +299,70 @@ saveData(); // 同步到 Supabase
 const paid = inst.paidMonths ?? Math.round(...)
 ```
 
+### 坑8：GitHub Pages CDN 缓存旧版 app.js ⭐⭐
+
+**现象：** git push 后 SW 缓存已清除，但页面仍加载旧版 app.js，新功能不生效。
+
+**根本原因：** GitHub Pages 背后有 CDN，即使 SW 缓存清了，CDN 层还可能缓存旧文件，导致 `fetch` 拿到的仍是旧版本。
+
+**修复：** 在 `index.html` 引用 `app.js` 时加版本号参数，强制 CDN 视为新资源：
+```html
+<script src="app.js?v=20260619"></script>
+```
+每次有重要更新时手动递增版本号（或用时间戳）。
+
+### 坑9：billStart 变量声明顺序错误导致 ReferenceError ⭐⭐
+
+**现象：** 账单状态区域渲染报错，控制台显示 `ReferenceError: Cannot access 'billStart' before initialization`。
+
+**根本原因：** `app.js` 中 `billedExpenseList` 的计算（约第 2033 行）提前使用了 `billStart` 变量，但该变量的 `const` 声明在第 2053 行才出现。`let/const` 不会提升，在声明前访问直接报错。
+
+**修复：** 将 `billStart`/`billEnd` 的声明移到使用位置之前。
+
+**教训：** 重构函数时如果移动了代码块，必须检查变量声明顺序，尤其是 `const/let`。
+
+### 坑10：账单展开明细 CSS 动画失效 ⭐⭐
+
+**现象：** 点击"已出账待还"/"本期未出账"的下三角按钮，明细列表不展开。
+
+**根本原因：** 旧 CSS 规则 `.billing-detail { display: none }` 优先级过高，覆盖了用 `max-height` 实现的展开动画，导致元素始终隐藏。
+
+**修复：** 移除 `display: none` 依赖，改用 `toggleBillingDetail()` 函数直接操作 `inline style`：
+```js
+function toggleBillingDetail(el) {
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+  } else {
+    el.style.display = 'block';
+  }
+}
+```
+
+**教训：** CSS 动画（`max-height` 过渡）与 `display: none` 不兼容，二选一。用 JS 直接操作 `style` 可绕过 CSS 优先级问题。
+
+### 坑11：getNetDebt() 重复扣除分期月供 ⭐⭐
+
+**现象：** 银行卡片显示的净负债数值偏低，与实际不符。
+
+**根本原因：** `getNetDebt()` 公式错误，对分期月供做了重复扣除：
+- 账单金额中已包含本期分期月供
+- `remainingAmount` 又包含了当期已在账单中的部分
+- 两者相加导致重复计算
+
+**正确公式：**
+```
+净负债 = (账单金额 - 已还金额) + 未来分期待还总额 + 未出账消费
+```
+其中 `remainingAmount` 不应包含当期已在账单中的月供部分。
+
+### 坑12：未出账消费是否计入总负债的口径问题 ⭐
+
+**背景：** 系统显示总负债约 15.4 万，用户 Excel 表格显示约 14.7 万，差了约 7,076 元。
+
+**原因：** 未出账消费（已刷卡但尚未生成账单）虽然没有账单，但资金已支出、额度已占用，属于真实负债。Excel 表格未包含这部分，导致低估。
+
+**结论：** 系统口径正确，应以系统数据为准。未出账消费计入总负债统计，账单卡片显示顺序为：账单金额 → 已还金额 → 账单剩余 → 分期待还 → 本期未出账 → **总剩余需还**。
+
 ---
 
 ## 七、部署流程
@@ -311,7 +375,15 @@ git push
 # 等待 30-60 秒 GitHub Pages 生效
 ```
 
-**每次有破坏性更新（删除 DOM 元素、改数据结构）时，必须同步升级 sw.js 中的 CACHE_VERSION。**
+**每次有破坏性更新（删除 DOM 元素、改数据结构）时，必须同步做以下两件事：**
+
+1. 升级 `sw.js` 中的 `CACHE_VERSION`（强制用户清除 SW 缓存）
+2. 升级 `index.html` 中 `app.js` 的版本号参数（强制 CDN 刷新）：
+```html
+<script src="app.js?v=20260619"></script>
+```
+
+**为什么废弃 ngrok：** 美团内网屏蔽了外部隧道服务，ngrok 在手机外网环境下不可靠。统一使用 GitHub Pages，git push 即上线，稳定可靠。
 
 ---
 
