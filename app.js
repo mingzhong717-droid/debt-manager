@@ -14,7 +14,7 @@ const DEBT_TABLE = 'debt_data';
 const CARD_BILLING = {
   'cmb-credit-1':       { name: '招商信用卡',   billDay: 21, dueDay: 21, dueDayNextMonth: false },
   'gz-credit-1':        { name: '广州银行信用卡', billDay: 13, dueDay: 2,  dueDayNextMonth: true  },
-  'spd-credit-1':       { name: '浦发信用卡',   billDay: 29, dueDay: 17, dueDayNextMonth: true  },
+  'spdb-credit-1':      { name: '浦发信用卡',   billDay: 28, dueDay: 17, dueDayNextMonth: true  },
   'abc-credit-1':       { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
   'cmbc-credit-1':      { name: '民生银行信用卡', billDay: 19, dueDay: 9,  dueDayNextMonth: true  },
   'alipay-huabei-1':    { name: '花呗',         billDay: 1,  dueDay: 8,  dueDayNextMonth: false },
@@ -25,7 +25,7 @@ const CARD_BILLING = {
 const PAYMENT_TO_CARD = {
   '招商信用卡':    'cmb-credit-1',
   '广州银行信用卡': 'gz-credit-1',
-  '浦发信用卡':    'spd-credit-1',
+  '浦发信用卡':    'spdb-credit-1',
   '农行信用卡':    'abc-credit-1',
   '民生信用卡':    'cmbc-credit-1',
   '花呗':         'alipay-huabei-1',
