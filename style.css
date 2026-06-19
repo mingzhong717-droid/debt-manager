@@ -639,6 +639,67 @@ body {
 .inst-meta-label { color: var(--text-muted); }
 .inst-meta-value { font-weight: 600; }
 
+.inst-expand-arrow {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.inst-detail-panel {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.inst-detail-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.inst-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.inst-period-row {
+  display: grid;
+  grid-template-columns: 16px 44px 90px 1fr 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+
+.inst-period-past {
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.inst-period-current {
+  color: var(--primary);
+  background: rgba(108, 99, 255, 0.08);
+  font-weight: 600;
+}
+
+.inst-period-future {
+  color: var(--text);
+}
+
+.inst-period-dot {
+  font-size: 0.6rem;
+  text-align: center;
+}
+
+.inst-period-past .inst-period-dot { color: var(--text-muted); }
+.inst-period-current .inst-period-dot { color: var(--primary); }
+.inst-period-future .inst-period-dot { color: var(--border); }
+
 /* ===== 时间线 ===== */
 .timeline {
   position: relative;

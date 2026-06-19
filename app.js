@@ -953,20 +953,55 @@ function renderInstallments() {
     group.className = 'installment-bank-group';
 
     let cardsHTML = '';
-    allInsts.forEach(inst => {
+    allInsts.forEach((inst, instIdx) => {
       const paid = inst.originalAmount - inst.remainingAmount;
       const pct = paid / inst.originalAmount;
       const endDate = dayjs(inst.endDate);
-      const monthsLeft = Math.max(0, endDate.diff(today, 'month'));
+      const startDate = dayjs(inst.startDate);
+      const totalMonths = inst.remainingMonths + Math.round(paid / inst.monthlyPayment);
+      const monthsLeft = inst.remainingMonths;
+      const cardId = `inst-detail-${bank.id}-${instIdx}`;
+
+      // 生成还款计划：从 startDate 开始，共 totalMonths 期
+      // 每期本金 = (originalAmount / totalMonths)，利息 = monthlyPayment - 本金（最后一期取尾差）
+      const principalPerMonth = inst.originalAmount / totalMonths;
+      const interestPerMonth = inst.monthlyPayment - principalPerMonth;
+      let scheduleHTML = '';
+      for (let i = 0; i < totalMonths; i++) {
+        const periodDate = startDate.add(i, 'month');
+        const isPast = periodDate.isBefore(today, 'month');
+        const isCurrent = periodDate.isSame(today, 'month');
+        const isLast = i === totalMonths - 1;
+        // 最后一期本金取尾差
+        const principal = isLast
+          ? inst.originalAmount - principalPerMonth * (totalMonths - 1)
+          : principalPerMonth;
+        const interest = isLast
+          ? inst.monthlyPayment - principal
+          : interestPerMonth;
+        const statusClass = isPast ? 'inst-period-past' : isCurrent ? 'inst-period-current' : 'inst-period-future';
+        const statusDot = isPast ? '●' : isCurrent ? '●' : '○';
+        scheduleHTML += `
+          <div class="inst-period-row ${statusClass}">
+            <span class="inst-period-dot">${statusDot}</span>
+            <span class="inst-period-num">第${i + 1}期</span>
+            <span class="inst-period-date">${periodDate.format('YYYY-MM-DD')}</span>
+            <span class="inst-period-principal">本金 ${fmt(principal)}</span>
+            <span class="inst-period-interest">利息 ${fmt(Math.max(0, interest))}</span>
+          </div>`;
+      }
 
       cardsHTML += `
-        <div class="installment-card">
+        <div class="installment-card" onclick="toggleInstDetail('${cardId}')" style="cursor:pointer">
           <div class="inst-header">
             <div>
               <div class="inst-name">${inst.name}</div>
               <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${inst.accountName}</div>
             </div>
-            <span class="inst-status">${monthsLeft > 0 ? '还款中' : '已结清'}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="inst-status">${monthsLeft > 0 ? '还款中' : '已结清'}</span>
+              <span class="inst-expand-arrow" id="arrow-${cardId}">▼</span>
+            </div>
           </div>
           <div class="inst-progress-wrap">
             <div class="inst-progress-label">
@@ -1003,6 +1038,10 @@ function renderInstallments() {
               <span class="inst-meta-value">${inst.endDate}</span>
             </div>
           </div>
+          <div class="inst-detail-panel" id="${cardId}" style="display:none">
+            <div class="inst-detail-title">📋 还款计划（共${totalMonths}期）</div>
+            <div class="inst-schedule">${scheduleHTML}</div>
+          </div>
         </div>`;
     });
 
@@ -1020,6 +1059,16 @@ function renderInstallments() {
   if (container.innerHTML === '') {
     container.innerHTML = '<div class="empty-state">暂无分期记录</div>';
   }
+}
+
+// 展开/收起分期还款计划
+function toggleInstDetail(cardId) {
+  const panel = document.getElementById(cardId);
+  const arrow = document.getElementById('arrow-' + cardId);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
 // ===== 结清时间线 =====
