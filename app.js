@@ -2059,7 +2059,7 @@ function renderBillingStatus() {
       unpaidTotal, unpaidExpenseList,
       billedExpenseList,
       dueDate, daysUntilDue, isUrgent, isOverdue,
-      minPayment: accData.minPayment || 0,
+      billAmount: accData.currentBillAmount || accData.minPayment || 0,
       billStart, billEnd,
     });
   });
@@ -2101,7 +2101,7 @@ function renderBillingStatus() {
             ${c.billStart && c.billEnd ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">(${c.billStart.format('M/D')}~${c.billEnd.format('M/D')})</span>` : ''}
             ${hasBilled ? `<span class="billing-toggle" id="arrow-${billedId}">▼</span>` : ''}
           </span>
-          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.minPayment > 0 ? fmt(c.minPayment) : '暂无'}</span>
+          <span class="billing-value ${c.isUrgent || c.isOverdue ? 'urgent' : ''}">${c.billAmount > 0 ? fmt(c.billAmount) : '暂无'}</span>
         </div>
         <div class="billing-detail" id="${billedId}">
           ${renderExpenseRows(c.billedExpenseList)}

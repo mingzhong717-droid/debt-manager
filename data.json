@@ -398,5 +398,519 @@
       ]
     }
   ],
-  "expenses": []
+  "expenses": [
+    {
+      "id": "7cfbaa9b-07e9-44a5-83a4-b9f6af0cdfa2",
+      "date": "2026-05-14",
+      "amount": -170.0,
+      "category": "退款",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团北京酷讯科技有限公司[退款]"
+    },
+    {
+      "id": "87f577f0-b24a-4843-aa5e-7bdf4d1495e1",
+      "date": "2026-05-28",
+      "amount": -146.0,
+      "category": "退款",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团北京酷讯科技有限公司[退款]"
+    },
+    {
+      "id": "f0d7b301-6f37-4abb-bc7d-518d77780c53",
+      "date": "2026-05-28",
+      "amount": -161.68,
+      "category": "退款",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-上海赫程国际旅行社有限公司[退款]"
+    },
+    {
+      "id": "eebce7ae-b878-40b8-99b8-2b8e54ede144",
+      "date": "2026-05-29",
+      "amount": -94.9,
+      "category": "退款",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-广州市禧媛服装有限公司[退款]"
+    },
+    {
+      "id": "89eb5de5-aead-490d-b9bf-bf1b1467d2d2",
+      "date": "2026-05-31",
+      "amount": -6.6,
+      "category": "退款",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-饶航[退款]"
+    },
+    {
+      "id": "a777fdc5-78db-40fa-b398-9821c0cbcbe1",
+      "date": "2026-05-07",
+      "amount": 3.0,
+      "category": "医疗",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-平昌县第二人民医院"
+    },
+    {
+      "id": "c6bdeb97-c14a-4864-bd64-b5d07a74b1a3",
+      "date": "2026-05-07",
+      "amount": 39.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-芙蓉冒菜麻辣烫"
+    },
+    {
+      "id": "75e96498-7576-4bb5-84fe-26b750eb01c4",
+      "date": "2026-05-07",
+      "amount": 3.0,
+      "category": "医疗",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-平昌县第二人民医院"
+    },
+    {
+      "id": "6d0057ea-fedf-45a5-966f-48dd92c28f1c",
+      "date": "2026-05-08",
+      "amount": 15.4,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-上海拉扎斯信息科技有限公司"
+    },
+    {
+      "id": "39fec2ed-f4a6-4daa-851c-cc8dd31df08c",
+      "date": "2026-05-09",
+      "amount": 21.7,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团巴中酱板鸭（西华街店）"
+    },
+    {
+      "id": "9865fb6c-afda-43e8-b5cd-f95ab09c2566",
+      "date": "2026-05-09",
+      "amount": 6.9,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团茶百道（巴中蓝湾国际店）"
+    },
+    {
+      "id": "806c1ebb-c7d8-459f-9e99-c74a7e3aa9d1",
+      "date": "2026-05-09",
+      "amount": 17.9,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团App老上海馄饨店"
+    },
+    {
+      "id": "37971c1c-6b93-4ac9-b24c-42a508661d70",
+      "date": "2026-05-10",
+      "amount": 24.88,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团南京灌汤包（煎饺生煎包馄饨）"
+    },
+    {
+      "id": "ce0ea6af-28d7-435a-a1f5-34e5530452b6",
+      "date": "2026-05-10",
+      "amount": 24.3,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团巴中酱板鸭（西华街店）"
+    },
+    {
+      "id": "5c7c7c90-0293-4da3-9742-d44e6ddb1a47",
+      "date": "2026-05-10",
+      "amount": 5.0,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-东升副食店"
+    },
+    {
+      "id": "5dd9e2dc-eafe-4593-ab95-0e32db06c2f5",
+      "date": "2026-05-11",
+      "amount": 6.0,
+      "category": "娱乐",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-杭州网易雷火科技有限公司"
+    },
+    {
+      "id": "41c13fe8-3e5a-4998-b29a-f2a0686fe36c",
+      "date": "2026-05-11",
+      "amount": 16.8,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）"
+    },
+    {
+      "id": "420fc167-7de3-4dc3-955c-46c69105fcab",
+      "date": "2026-05-12",
+      "amount": 17.8,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）"
+    },
+    {
+      "id": "b3610f81-ea72-4bf0-b51a-d029e96b1709",
+      "date": "2026-05-12",
+      "amount": 319.0,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "里白百货"
+    },
+    {
+      "id": "54e63b28-ea0c-4da5-b5b1-3c90f84b5859",
+      "date": "2026-05-13",
+      "amount": 24.9,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团北京三快在线科技有限公司"
+    },
+    {
+      "id": "acb2b4d0-448c-4ab4-9c6a-c8dff353e447",
+      "date": "2026-05-13",
+      "amount": 18.3,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团潮汕汤粉"
+    },
+    {
+      "id": "732e3805-343f-4bb4-b9e7-b7294ca7529f",
+      "date": "2026-05-14",
+      "amount": 26.3,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团潮汕汤粉"
+    },
+    {
+      "id": "6f6505ef-30b7-474e-8220-6f313018c91f",
+      "date": "2026-05-14",
+      "amount": 170.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团北京酷讯科技有限公司"
+    },
+    {
+      "id": "c298e1e8-13c2-4337-bad0-3c4c6c90e371",
+      "date": "2026-05-14",
+      "amount": 52.0,
+      "category": "娱乐",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团汉海信息技术（上海）有限公司"
+    },
+    {
+      "id": "9685bcab-6735-44de-b7a0-c1bbe62183ae",
+      "date": "2026-05-14",
+      "amount": 43.0,
+      "category": "娱乐",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团汉海信息技术（上海）有限公司"
+    },
+    {
+      "id": "1b8ae262-cd34-4f12-98de-9672b6ea3c33",
+      "date": "2026-05-15",
+      "amount": 21.4,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团潮汕汤粉"
+    },
+    {
+      "id": "9dd73032-8d36-4848-8f60-a4e56377cf34",
+      "date": "2026-05-15",
+      "amount": 143.14,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团炭火匠人·烧烤（平昌店）"
+    },
+    {
+      "id": "667baefe-7788-40ce-a2f7-02f9927dcbab",
+      "date": "2026-05-18",
+      "amount": 29.5,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-开迈斯新能源科技有限公司"
+    },
+    {
+      "id": "328f1466-8a76-45aa-ab03-0317e05d5cc2",
+      "date": "2026-05-18",
+      "amount": 7.9,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-邻你超市有限公司"
+    },
+    {
+      "id": "f8fbaf4c-3ca7-47a9-b30f-e77b2602534c",
+      "date": "2026-05-18",
+      "amount": 25.17,
+      "category": "其他",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-CAMS"
+    },
+    {
+      "id": "1a76e38f-c412-4036-95fb-2c698d3354df",
+      "date": "2026-05-18",
+      "amount": 16.0,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-邻你超市有限公司"
+    },
+    {
+      "id": "37604192-fac7-400d-8d46-773adc9222f3",
+      "date": "2026-05-19",
+      "amount": 12831.11,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "里白百货"
+    },
+    {
+      "id": "72b35d5e-14bc-4907-978a-9a3c9b6532fe",
+      "date": "2026-05-19",
+      "amount": 25.0,
+      "category": "数码",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-Apple"
+    },
+    {
+      "id": "83d6794f-1cf2-41a8-be2c-f1b757ce3055",
+      "date": "2026-05-19",
+      "amount": 59.0,
+      "category": "数码",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-Apple"
+    },
+    {
+      "id": "a51c4c64-bff8-452e-b1d1-a8a9b45e1f77",
+      "date": "2026-05-20",
+      "amount": 155.78,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-无锡汐彩服饰有限公司"
+    },
+    {
+      "id": "ece2f54c-3cc2-44a2-9e29-34ac394815db",
+      "date": "2026-05-22",
+      "amount": 94.9,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-广州市禧媛服装有限公司"
+    },
+    {
+      "id": "0fb12398-a30b-48a1-9952-908fcc734839",
+      "date": "2026-05-26",
+      "amount": 7.0,
+      "category": "购物",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-临我LINWO"
+    },
+    {
+      "id": "e346d0cf-7214-4e5a-acf1-2614ae1aa6b0",
+      "date": "2026-05-27",
+      "amount": 49.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-停车场烧烤"
+    },
+    {
+      "id": "aa19987f-2f92-44b4-a2f8-9e63c199a84c",
+      "date": "2026-05-27",
+      "amount": 153.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-停车场烧烤"
+    },
+    {
+      "id": "96fba9b4-de6d-4ee0-abbb-5167e3efd52a",
+      "date": "2026-05-28",
+      "amount": 146.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团北京酷讯科技有限公司"
+    },
+    {
+      "id": "68c233bd-d50c-493e-bc00-8f9431a2fbac",
+      "date": "2026-05-28",
+      "amount": 161.68,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-上海赫程国际旅行社有限公司"
+    },
+    {
+      "id": "96e3bca0-55db-4206-bdda-e6bf5c29358b",
+      "date": "2026-05-29",
+      "amount": 3.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-南京领行科技股份有限公司"
+    },
+    {
+      "id": "823eeff8-8778-4111-b64f-90b079576c12",
+      "date": "2026-05-29",
+      "amount": 20.79,
+      "category": "其他",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-支付宝支付科技有限公司"
+    },
+    {
+      "id": "918abe6c-1727-4d4e-a8d9-fb8880765544",
+      "date": "2026-05-29",
+      "amount": 60.5,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团叶美丽的老公是厨师（青羊店）"
+    },
+    {
+      "id": "88255c24-7b8d-45b2-ab6d-87cfd9f509c5",
+      "date": "2026-05-29",
+      "amount": 20.0,
+      "category": "其他",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-饶航"
+    },
+    {
+      "id": "9fed1bb6-331a-4077-8c39-1fcbefe0805f",
+      "date": "2026-05-30",
+      "amount": 1.8,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-成都地铁运营有限公司"
+    },
+    {
+      "id": "8a5b3700-ec3a-43f9-a3fb-29eddffef748",
+      "date": "2026-05-30",
+      "amount": 1.8,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-成都地铁运营有限公司"
+    },
+    {
+      "id": "02945210-77d6-456d-bf50-1169540583e1",
+      "date": "2026-05-30",
+      "amount": 192.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-青羊区茶马古道小吃店"
+    },
+    {
+      "id": "e5573fc8-7f2c-457e-ac58-a24c68516a67",
+      "date": "2026-05-30",
+      "amount": 25.0,
+      "category": "医疗",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团App惠民百姓大药房（一环路店）"
+    },
+    {
+      "id": "fa2c9a21-a118-4c9c-a987-9108fdc70ecd",
+      "date": "2026-05-31",
+      "amount": 7.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-一码通行"
+    },
+    {
+      "id": "d7f9c612-1a2f-41ec-b815-ca62d85e64be",
+      "date": "2026-05-31",
+      "amount": 20.0,
+      "category": "其他",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-饶航"
+    },
+    {
+      "id": "ab7d3f07-33ec-4f7d-9457-8e5f441118e6",
+      "date": "2026-05-31",
+      "amount": 5.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-巴州区张晓红早餐摊"
+    },
+    {
+      "id": "bf20d2a7-bcf3-4874-8574-39face4ea73d",
+      "date": "2026-05-31",
+      "amount": 4.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-成都天府通数字科技有限公司"
+    },
+    {
+      "id": "115de482-61cf-4294-8d57-a523a2e9746d",
+      "date": "2026-06-01",
+      "amount": 20.0,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-一码通行"
+    },
+    {
+      "id": "b448e9d5-7e44-4394-a0e2-1ddfc23f110b",
+      "date": "2026-06-01",
+      "amount": 50.0,
+      "category": "通讯",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "支付宝-广东移动"
+    },
+    {
+      "id": "3ee01bc9-2fb6-4b7b-a7ca-787aeea8e523",
+      "date": "2026-06-01",
+      "amount": 8.26,
+      "category": "出行",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "财付通-万帮星星充电科技有限公司"
+    },
+    {
+      "id": "9279ab4c-fd3b-402a-8826-f69879e462dc",
+      "date": "2026-06-02",
+      "amount": 9.0,
+      "category": "餐饮",
+      "payment": "招商信用卡",
+      "cardId": "cmb-credit-1",
+      "note": "美团-美团App瑞幸咖啡(巴中蓝湾国际店)"
+    }
+  ]
 }
