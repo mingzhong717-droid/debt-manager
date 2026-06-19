@@ -958,14 +958,13 @@ function renderInstallments() {
       const pct = paid / inst.originalAmount;
       const endDate = dayjs(inst.endDate);
       const startDate = dayjs(inst.startDate);
-      const totalMonths = inst.remainingMonths + Math.round(paid / inst.monthlyPayment);
+      const totalMonths = inst.totalMonths || (inst.remainingMonths + Math.round(paid / inst.monthlyPayment));
       const monthsLeft = inst.remainingMonths;
       const cardId = `inst-detail-${bank.id}-${instIdx}`;
 
-      // 生成还款计划：从 startDate 开始，共 totalMonths 期
-      // 每期本金 = (originalAmount / totalMonths)，利息 = monthlyPayment - 本金（最后一期取尾差）
-      const principalPerMonth = inst.originalAmount / totalMonths;
-      const interestPerMonth = inst.monthlyPayment - principalPerMonth;
+      // 生成还款计划：优先用 data.json 里的精确字段，没有时才推算
+      const principalPerMonth = inst.principalPerMonth || (inst.originalAmount / totalMonths);
+      const interestPerMonth = inst.interestPerMonth !== undefined ? inst.interestPerMonth : (inst.monthlyPayment - principalPerMonth);
       let scheduleHTML = '';
       for (let i = 0; i < totalMonths; i++) {
         const periodDate = startDate.add(i, 'month');
@@ -974,10 +973,10 @@ function renderInstallments() {
         const isLast = i === totalMonths - 1;
         // 最后一期本金取尾差
         const principal = isLast
-          ? inst.originalAmount - principalPerMonth * (totalMonths - 1)
+          ? Math.max(0, inst.originalAmount - principalPerMonth * (totalMonths - 1))
           : principalPerMonth;
         const interest = isLast
-          ? inst.monthlyPayment - principal
+          ? Math.max(0, inst.monthlyPayment - principal)
           : interestPerMonth;
         const statusClass = isPast ? 'inst-period-past' : isCurrent ? 'inst-period-current' : 'inst-period-future';
         const statusDot = isPast ? '●' : isCurrent ? '●' : '○';
@@ -987,7 +986,7 @@ function renderInstallments() {
             <span class="inst-period-num">第${i + 1}期</span>
             <span class="inst-period-date">${periodDate.format('YYYY-MM-DD')}</span>
             <span class="inst-period-principal">本金 ${fmt(principal)}</span>
-            <span class="inst-period-interest">利息 ${fmt(Math.max(0, interest))}</span>
+            <span class="inst-period-interest">利息 ${fmt(interest)}</span>
           </div>`;
       }
 

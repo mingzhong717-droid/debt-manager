@@ -5,9 +5,24 @@
     "currency": "CNY",
     "incomes": [],
     "wallets": [
-      { "id": "wallet-savings", "name": "储蓄卡", "icon": "🏦", "balance": 0 },
-      { "id": "wallet-wechat",  "name": "微信钱包", "icon": "💚", "balance": 0 },
-      { "id": "wallet-alipay",  "name": "支付宝余额", "icon": "💙", "balance": 0 }
+      {
+        "id": "wallet-savings",
+        "name": "储蓄卡",
+        "icon": "🏦",
+        "balance": 0
+      },
+      {
+        "id": "wallet-wechat",
+        "name": "微信钱包",
+        "icon": "💚",
+        "balance": 0
+      },
+      {
+        "id": "wallet-alipay",
+        "name": "支付宝余额",
+        "icon": "💙",
+        "balance": 0
+      }
     ]
   },
   "banks": [
@@ -65,6 +80,9 @@
               "originalAmount": 29577.23,
               "remainingAmount": 18386.55,
               "monthlyPayment": 2626.65,
+              "totalMonths": 12,
+              "principalPerMonth": 2464.77,
+              "interestPerMonth": 161.88,
               "remainingMonths": 7,
               "startDate": "2026-01-21",
               "endDate": "2027-01-21",
@@ -89,7 +107,7 @@
           "creditLimit": 24000,
           "billDay": 13,
           "dueDay": 2,
-          "minPayment": 702.20,
+          "minPayment": 702.2,
           "currentBillStart": "2026-05-14",
           "currentBillEnd": "2026-06-13",
           "currentDueDate": "2026-07-02",
@@ -101,7 +119,10 @@
               "name": "消费分期一（36期）",
               "originalAmount": 8693.08,
               "remainingAmount": 6741.71,
-              "monthlyPayment": 275.80,
+              "monthlyPayment": 275.8,
+              "totalMonths": 36,
+              "principalPerMonth": 241.48,
+              "interestPerMonth": 34.32,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
@@ -113,6 +134,9 @@
               "originalAmount": 196.0,
               "remainingAmount": 152.04,
               "monthlyPayment": 6.22,
+              "totalMonths": 36,
+              "principalPerMonth": 5.45,
+              "interestPerMonth": 0.77,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
@@ -124,6 +148,9 @@
               "originalAmount": 13139.34,
               "remainingAmount": 10189.87,
               "monthlyPayment": 416.86,
+              "totalMonths": 36,
+              "principalPerMonth": 364.98,
+              "interestPerMonth": 51.88,
               "remainingMonths": 26,
               "startDate": "2025-09-02",
               "endDate": "2028-11-02",
@@ -165,7 +192,10 @@
               "remainingMonths": 5,
               "startDate": "2024-12-01",
               "endDate": "2026-11-01",
-              "note": "24期，年化12.10%，剩余本金3,200.77+利息97.43"
+              "note": "24期，年化12.10%，剩余本金3,200.77+利息97.43",
+              "totalMonths": 24,
+              "principalPerMonth": 583.33,
+              "interestPerMonth": 76.33
             },
             {
               "id": "spdb-inst-merchant",
@@ -176,7 +206,10 @@
               "remainingMonths": 2,
               "startDate": "2026-01-01",
               "endDate": "2026-08-01",
-              "note": "3笔商户分期，剩余本金276.10元"
+              "note": "3笔商户分期，剩余本金276.10元",
+              "totalMonths": 3,
+              "principalPerMonth": 138.05,
+              "interestPerMonth": 0
             }
           ]
         }
@@ -213,7 +246,10 @@
               "remainingMonths": 11,
               "startDate": "2025-06-06",
               "endDate": "2027-06-06",
-              "note": "账号2272****3180，每期本金302+利息34.81，结清日2027-05-06"
+              "note": "账号2272****3180，每期本金302+利息34.81，结清日2027-05-06",
+              "totalMonths": 24,
+              "principalPerMonth": 302.0,
+              "interestPerMonth": 34.81
             },
             {
               "id": "abc-inst-2",
@@ -224,7 +260,10 @@
               "remainingMonths": 4,
               "startDate": "2025-11-04",
               "endDate": "2026-11-04",
-              "note": "账号2272****4140，每期本金822+利息47.34，结清日2026-10-06"
+              "note": "账号2272****4140，每期本金822+利息47.34，结清日2026-10-06",
+              "totalMonths": 12,
+              "principalPerMonth": 822.0,
+              "interestPerMonth": 47.34
             },
             {
               "id": "abc-inst-3",
@@ -235,7 +274,10 @@
               "remainingMonths": 11,
               "startDate": "2026-06-05",
               "endDate": "2027-06-05",
-              "note": "账号2272****5519，每期本金596+利息约31.12，结清日2027-06-06"
+              "note": "账号2272****5519，每期本金596+利息约31.12，结清日2027-06-06",
+              "totalMonths": 12,
+              "principalPerMonth": 596.0,
+              "interestPerMonth": 31.12
             }
           ]
         }
@@ -272,13 +314,15 @@
               "remainingMonths": 5,
               "startDate": "2025-11-03",
               "endDate": "2026-11-08",
-              "note": "12期，总利息2,158.48元，月利率约0.45%，剩余本金16,654.96+利息899.39，✅ 最快结清"
+              "note": "12期，总利息2,158.48元，月利率约0.45%，剩余本金16,654.96+利息899.39，✅ 最快结清",
+              "totalMonths": 12,
+              "principalPerMonth": 3330.99,
+              "interestPerMonth": 179.88
             }
           ]
         }
       ]
-    }
-    ,
+    },
     {
       "id": "alipay",
       "name": "支付宝",
