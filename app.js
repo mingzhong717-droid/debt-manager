@@ -2115,7 +2115,8 @@ function renderBillingStatus() {
     // 未来分期待还金额（不含当期，当期已在账单内）
     const futureInstallments = (c.accData.installments || []).reduce((s, i) => s + (i.remainingAmount || 0), 0);
     const hasFutureInst = futureInstallments > 0;
-    const totalRemaining = netOwed + futureInstallments;
+    const hasUnpaid = c.unpaidTotal > 0;
+    const totalRemaining = netOwed + futureInstallments + (hasUnpaid ? c.unpaidTotal : 0);
 
     html += `
       <div class="billing-card">
@@ -2142,19 +2143,10 @@ function renderBillingStatus() {
         ` : ''}
         ${hasFutureInst ? `
         <div class="billing-card-row">
-          <span class="billing-label">分期待还<span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px">（未来${c.accData.installments.length}笔）</span></span>
-          <span style="color:var(--warning);font-weight:500">${fmt(futureInstallments)}</span>
+          <span class="billing-label">分期待还（未来${(c.accData.installments || []).length}笔）</span>
+          <span style="color:var(--warning)">${fmt(futureInstallments)}</span>
         </div>
-        <div class="billing-card-row" style="border-top:2px solid var(--border);padding-top:6px">
-          <span class="billing-label" style="font-weight:600">总剩余需还</span>
-          <span style="color:var(--danger);font-weight:700;font-size:1.05rem">${fmt(totalRemaining)}</span>
-        </div>
-        ` : (hasPaid ? `
-        <div class="billing-card-row" style="border-top:2px solid var(--border);padding-top:6px">
-          <span class="billing-label" style="font-weight:600">剩余需还</span>
-          <span style="color:var(--danger);font-weight:700;font-size:1.05rem">${fmt(netOwed)}</span>
-        </div>
-        ` : '')}
+        ` : ''}
         <div class="billing-card-row${hasUnpaid ? ' billing-row-toggle' : ''}" data-toggle-id="${unpaidId}" style="cursor:${hasUnpaid ? 'pointer' : 'default'}">
           <span class="billing-label">本期未出账
             ${hasUnpaid ? `<span class="billing-toggle" id="arrow-${unpaidId}">▼</span>` : ''}
@@ -2166,6 +2158,17 @@ function renderBillingStatus() {
         <div class="billing-detail" id="${unpaidId}">
           ${renderExpenseRows(c.unpaidExpenseList)}
         </div>
+        ${(hasFutureInst || hasUnpaid) ? `
+        <div class="billing-card-row" style="border-top:2px solid var(--border);padding-top:6px">
+          <span class="billing-label" style="font-weight:600">总剩余需还</span>
+          <span style="color:var(--danger);font-weight:700;font-size:1.05rem">${fmt(totalRemaining)}</span>
+        </div>
+        ` : (hasPaid ? `
+        <div class="billing-card-row" style="border-top:2px solid var(--border);padding-top:6px">
+          <span class="billing-label" style="font-weight:600">剩余需还</span>
+          <span style="color:var(--danger);font-weight:700;font-size:1.05rem">${fmt(netOwed)}</span>
+        </div>
+        ` : '')}
         <div class="billing-card-row">
           <span class="billing-label">下次还款日</span>
           <span>${dueTxt}</span>
