@@ -12,7 +12,7 @@ const DEBT_TABLE = 'debt_data';
 // ===== 各信用卡账单周期配置 =====
 // billDay: 账单日, dueDay: 还款日, dueDayNextMonth: 还款日是否在下月
 const CARD_BILLING = {
-  'cmb-credit-1':       { name: '招商信用卡',   billDay: 21, dueDay: 21, dueDayNextMonth: false },
+  'cmb-credit-1':       { name: '招商信用卡',   billDay: 3,  dueDay: 21, dueDayNextMonth: false },
   'gz-credit-1':        { name: '广州银行信用卡', billDay: 13, dueDay: 2,  dueDayNextMonth: true  },
   'spdb-credit-1':      { name: '浦发信用卡',   billDay: 28, dueDay: 17, dueDayNextMonth: true  },
   'abc-credit-1':       { name: '农业银行信用卡', billDay: 17, dueDay: 6,  dueDayNextMonth: true  },
@@ -1350,6 +1350,8 @@ async function loadExpensesFromCloud() {
       localStorage.setItem('expenses', JSON.stringify(expenses));
       await idbSave('expenses', expenses);
       console.log('[Expenses] 云端加载成功，共', expenses.length, '条');
+      // 云端数据更新后重渲染消费概览（首页）
+      renderExpenseOverview();
       // 网络恢复后顺便重试待同步数据
       await flushPendingSaves();
     }
