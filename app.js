@@ -2261,7 +2261,22 @@ function renderBillingStatus() {
     // 当前账单周期
     const cycle = getBillingCycleDates(cardId);
     if (!cycle) return;
-    const { cycleStart, cycleEnd } = cycle;
+    let { cycleStart, cycleEnd } = cycle;
+
+    // 如果当期账单已出（currentBillAmount > 0），未出账只算账单截止日之后的消费
+    // 避免已出账消费与 currentBillAmount 重复计入（与 getUnpaidTotal 逻辑一致）
+    if (accData && accData.currentBillAmount > 0) {
+      if (accData.currentBillEnd) {
+        cycleStart = dayjs(accData.currentBillEnd).add(1, 'day').startOf('day');
+      } else {
+        const billDay = cfg.billDay;
+        if (now.date() >= billDay) {
+          cycleStart = now.date(billDay).startOf('day');
+        } else {
+          cycleStart = cycleEnd.add(1, 'day');
+        }
+      }
+    }
 
     // 本周期内的消费（未出账），排除主动还款
     const cardName = cfg.name;
