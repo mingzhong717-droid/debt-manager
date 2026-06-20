@@ -123,6 +123,7 @@
             {
               "id": "gz-inst-1",
               "name": "消费分期一（36期）",
+              "paidPeriods": 10,
               "originalAmount": 8693.08,
               "remainingAmount": 6190.11,
               "remainingPrincipal": 5795.39,
@@ -139,6 +140,7 @@
             {
               "id": "gz-inst-2",
               "name": "消费分期二（36期）",
+              "paidPeriods": 10,
               "originalAmount": 196.0,
               "remainingAmount": 139.60,
               "remainingPrincipal": 130.67,
@@ -155,6 +157,7 @@
             {
               "id": "gz-inst-3",
               "name": "账单分期三（36期）",
+              "paidPeriods": 10,
               "originalAmount": 13139.34,
               "remainingAmount": 9356.15,
               "remainingPrincipal": 8759.58,

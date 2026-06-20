@@ -1097,7 +1097,8 @@ function renderInstallments() {
         ? inst.remainingInterest
         : Math.round(interestPerMonth * monthsLeft * 100) / 100;
       let scheduleHTML = '';
-      const paidPeriods = totalMonths - monthsLeft; // 已还期数
+      // 已还期数：优先用显式字段，否则用 totalMonths - remainingMonths
+      const paidPeriods = inst.paidPeriods != null ? inst.paidPeriods : (totalMonths - monthsLeft);
       for (let i = 0; i < totalMonths; i++) {
         const periodDate = startDate.add(i, 'month');
         const isPast = i < paidPeriods;
