@@ -705,12 +705,15 @@ function renderBankCards() {
 
     let accountsHTML = '';
     bank.accounts.forEach(acc => {
+      // savings 类型没有还款日，跳过还款日计算
+      if (acc.type === 'savings') return;
+
       const dueDay = acc.dueDay;
       const now = today;
-      let dueDate = now.date(dueDay);
-      if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
-      const daysLeft = dueDate.diff(now, 'day');
-      const isUrgent = daysLeft <= 5;
+      let dueDate = dueDay ? now.date(dueDay) : null;
+      if (dueDate && dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
+      const daysLeft = dueDate ? dueDate.diff(now, 'day') : null;
+      const isUrgent = daysLeft != null && daysLeft <= 5;
 
       let extraInfo = '';
       if (acc.type === 'credit') {
@@ -735,15 +738,16 @@ function renderBankCards() {
           </div>`;
       }
 
+      const dueTxt = dueDate
+        ? `还款日 <span class="due-badge ${isUrgent ? 'urgent' : ''}">${dueDay}号 (${daysLeft}天后)</span>`
+        : '';
       accountsHTML += `
         <div class="account-item">
           <div class="account-header">
             <span class="account-name">${acc.name}</span>
             <span class="account-amount">${fmt(getNetDebt(acc))}</span>
           </div>
-          <div class="account-meta">
-            <span>还款日 <span class="due-badge ${isUrgent ? 'urgent' : ''}">${dueDay}号 (${daysLeft}天后)</span></span>
-          </div>
+          ${dueTxt ? `<div class="account-meta"><span>${dueTxt}</span></div>` : ''}
           ${extraInfo}
         </div>`;
     });
