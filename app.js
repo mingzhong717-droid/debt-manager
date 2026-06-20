@@ -444,7 +444,8 @@ function getUnpaidTotal(cardId) {
 function getNetDebt(acc) {
   if (acc.type === 'credit') {
     // 账单剩余 = 当期账单 - 已还
-    const billAmount = acc.currentBillAmount || acc.minPayment || 0;
+    // 注意：currentBillAmount 可能为 0（表示本期无账单），不能用 || 判断
+    const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
     const paidAmount = acc.paidAmount || 0;
     const billRemaining = Math.max(0, billAmount - paidAmount);
 
@@ -463,7 +464,7 @@ function getNetDebt(acc) {
 function calcUsedCredit(acc) {
   if (acc.type !== 'credit') return 0;
   // 账单剩余 = 当期账单 - 已还
-  const billAmount = acc.currentBillAmount || 0;
+  const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : 0);
   const paidAmount = acc.paidAmount || 0;
   const billRemaining = Math.max(0, billAmount - paidAmount);
 
@@ -499,7 +500,7 @@ function calcSummary() {
         totalDebt += getNetDebt(acc);
 
         // 月供：当期账单（含分期月供），减去已还部分
-        const billAmount = acc.currentBillAmount || acc.minPayment || 0;
+        const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
         const paidAmount = acc.paidAmount || 0;
         monthlyDue += Math.max(0, billAmount - paidAmount);
 
@@ -1235,7 +1236,10 @@ function renderTimeline() {
           monthlyPayment = acc.monthlyPayment;
         }
 
-        const monthsLeft = Math.max(0, endDate.diff(today, 'month'));
+        // 优先使用 remainingMonths 字段（精确），endDate.diff 会因日期截断少算
+        const monthsLeft = acc.remainingMonths != null
+          ? acc.remainingMonths
+          : Math.max(0, endDate.diff(today, 'month'));
         const pct = totalAmount > 0 ? Math.min(Math.max(paidAmount / totalAmount, 0), 1) : 0;
 
         items.push({
@@ -1256,7 +1260,10 @@ function renderTimeline() {
             const paid = inst.originalAmount - inst.remainingAmount;
             const pct = inst.originalAmount > 0
               ? Math.min(Math.max(paid / inst.originalAmount, 0), 1) : 0;
-            const monthsLeft = Math.max(0, endDate.diff(today, 'month'));
+            // 优先使用 remainingMonths 字段
+            const monthsLeft = inst.remainingMonths != null
+              ? inst.remainingMonths
+              : Math.max(0, endDate.diff(today, 'month'));
 
             items.push({
               type: 'credit-inst',
@@ -1275,6 +1282,8 @@ function renderTimeline() {
           // 无分期：按最低还款估算结清时间
           const rate = acc.interestRate * 30;
           const netDebt = getNetDebt(acc);
+          // 净负债为 0 的信用卡无需出现在结清时间线中
+          if (netDebt <= 0) return;
           const minPay = acc.minPayment || netDebt;
           let balance = netDebt;
           let months = 0;
@@ -2241,7 +2250,7 @@ function renderBillingStatus() {
       unpaidTotal, unpaidExpenseList,
       billedExpenseList,
       dueDate, daysUntilDue, isUrgent, isOverdue,
-      billAmount: accData.currentBillAmount || accData.minPayment || 0,
+      billAmount: (accData.currentBillAmount != null ? accData.currentBillAmount : accData.minPayment) || 0,
       billStart, billEnd,
     });
   });
@@ -3040,6 +3049,8 @@ async function aiConfirmInstallment(parsed) {
   await saveData();
   renderInstallments();
   renderTimeline();
+  renderSummaryBanner();
+  renderBankCards();
   showToast(`✅ 分期"${parsed.instName}"已录入到${targetAcc.name}`);
 }
 
