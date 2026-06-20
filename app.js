@@ -40,13 +40,13 @@ const PAYMENT_TO_WALLET = {
   '微信/支付宝':  'wallet-wechat',  // 兼容旧选项，默认归微信
 };
 
-// 录入消费时自动扣减钱包余额
+// 录入消费时自动扣减钱包余额（仅当余额 > 0 时才扣减，避免未设置余额时误扣）
 function deductWalletBalance(payment, amount) {
   const walletId = PAYMENT_TO_WALLET[payment];
   if (!walletId || !DATA || !DATA.meta.wallets) return false;
   const wallet = DATA.meta.wallets.find(w => w.id === walletId);
-  if (!wallet) return false;
-  wallet.balance = Math.max(0, (wallet.balance || 0) - amount);
+  if (!wallet || !wallet.balance || wallet.balance <= 0) return false;
+  wallet.balance = Math.max(0, wallet.balance - amount);
   return true;
 }
 
@@ -2089,6 +2089,26 @@ function openQuickUpdate() {
     html += `</div>`;
   });
 
+  // 钱包余额编辑区
+  if (DATA.meta && DATA.meta.wallets && DATA.meta.wallets.length > 0) {
+    html += `<div class="qu-bank-group">
+      <div class="qu-bank-title" style="color:#00d4aa">💰 钱包余额</div>`;
+    DATA.meta.wallets.forEach((w, wi) => {
+      html += `
+      <div class="qu-row">
+        <label class="qu-label">${w.icon || '💳'} ${w.name}</label>
+        <div class="qu-inputs">
+          <div class="qu-field">
+            <span class="qu-field-label">余额 (元)</span>
+            <input type="number" class="qu-input qu-wallet-input" step="0.01" min="0"
+              data-wallet="${wi}" value="${w.balance || 0}" />
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
   container.innerHTML = html;
   document.getElementById('quickUpdateOverlay').classList.add('open');
 }
@@ -2099,12 +2119,19 @@ function closeQuickUpdate() {
 
 document.getElementById('quickUpdateSave').addEventListener('click', async () => {
   // 读取所有输入值写回 DATA
-  document.querySelectorAll('.qu-input').forEach(input => {
+  document.querySelectorAll('.qu-input:not(.qu-wallet-input)').forEach(input => {
     const bi = parseInt(input.dataset.bank);
     const ai = parseInt(input.dataset.acc);
     const field = input.dataset.field;
     const val = parseFloat(input.value) || 0;
     DATA.banks[bi].accounts[ai][field] = val;
+  });
+
+  // 读取钱包余额
+  document.querySelectorAll('.qu-wallet-input').forEach(input => {
+    const wi = parseInt(input.dataset.wallet);
+    const val = parseFloat(input.value) || 0;
+    if (DATA.meta.wallets[wi]) DATA.meta.wallets[wi].balance = val;
   });
 
   // 更新 lastUpdated
