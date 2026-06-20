@@ -379,6 +379,7 @@ function init() {
   safeRender('BillingStatus',      renderBillingStatus);
   safeRender('ExpenseOverview',    renderExpenseOverview);
   safeRender('PaymentReminders',   schedulePaymentReminders);
+  safeRender('AutoSettle',         initAutoSettle);
   try {
     document.getElementById('lastUpdated').textContent = '更新于 ' + DATA.meta.lastUpdated;
   } catch (e) {}
@@ -2514,6 +2515,208 @@ function schedulePaymentReminders() {
       }
     });
   });
+}
+
+// ===== 月度结算（自动推进分期 + 确认还款）=====
+// 检测已过还款日但未结算的账户，提供一键结算
+function checkAndAutoSettle() {
+  if (!DATA) return;
+  const now = today;
+  const pendingSettlements = [];
+
+  DATA.banks.forEach(bank => {
+    bank.accounts.forEach(acc => {
+      if (acc.type !== 'credit') return;
+      if (!acc.currentDueDate) return;
+      const dueDate = dayjs(acc.currentDueDate);
+      // 还款日已过 且 paidAmount < currentBillAmount（未标记全额已还）
+      const billAmount = acc.currentBillAmount || 0;
+      const paidAmount = acc.paidAmount || 0;
+      if (billAmount > 0 && now.isAfter(dueDate, 'day') && paidAmount < billAmount) {
+        pendingSettlements.push({ bank, acc, dueDate, billAmount });
+      }
+    });
+  });
+
+  if (pendingSettlements.length === 0) return;
+
+  // 弹出结算提醒
+  showSettlementDialog(pendingSettlements);
+}
+
+function showSettlementDialog(items) {
+  // 创建弹窗
+  let overlay = document.getElementById('settlementOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'settlementOverlay';
+    overlay.className = 'modal-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  let html = `
+    <div class="modal-content" style="max-width:420px;max-height:80vh;overflow-y:auto">
+      <div class="modal-header">
+        <h3 style="margin:0;font-size:1.1rem">📋 月度结算提醒</h3>
+        <button class="modal-close" id="settlementClose">✕</button>
+      </div>
+      <div style="padding:16px;font-size:0.85rem;color:var(--text-muted)">
+        以下账户已过还款日，请确认是否已还款：
+      </div>
+      <div style="padding:0 16px 16px">`;
+
+  items.forEach((item, idx) => {
+    const instInfo = (item.acc.installments || []).map(i =>
+      `${i.name.replace(/（.*）/, '')} 第${i.totalMonths - i.remainingMonths + 1}期`
+    ).join('、');
+    html += `
+      <div class="settlement-item" style="background:var(--card-bg);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:600;color:var(--text)">${item.bank.icon} ${item.acc.name}</span>
+          <span style="color:var(--danger);font-size:0.8rem">还款日 ${item.dueDate.format('M/D')} 已过</span>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px">
+          账单金额：${fmt(item.billAmount)}${instInfo ? ' | 含分期：' + instInfo : ''}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-settle" data-idx="${idx}" data-action="full" style="flex:1;padding:8px;border:none;border-radius:6px;background:var(--success);color:#fff;font-size:0.82rem;cursor:pointer">
+            ✅ 已全额还款
+          </button>
+          <button class="btn-settle" data-idx="${idx}" data-action="min" style="flex:1;padding:8px;border:none;border-radius:6px;background:var(--warning);color:#fff;font-size:0.82rem;cursor:pointer">
+            ⚠️ 已还最低
+          </button>
+          <button class="btn-settle" data-idx="${idx}" data-action="skip" style="padding:8px 12px;border:none;border-radius:6px;background:var(--border);color:var(--text-muted);font-size:0.82rem;cursor:pointer">
+            跳过
+          </button>
+        </div>
+      </div>`;
+  });
+
+  html += `
+      </div>
+      <div style="padding:0 16px 16px;text-align:center">
+        <button id="settlementDone" style="width:100%;padding:12px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:0.9rem;font-weight:600;cursor:pointer">
+          完成结算
+        </button>
+      </div>
+    </div>`;
+
+  overlay.innerHTML = html;
+  overlay.classList.add('open');
+
+  // 记录每个item的操作结果
+  const actions = items.map(() => null);
+
+  // 绑定按钮事件
+  overlay.querySelectorAll('.btn-settle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const action = btn.dataset.action;
+      actions[idx] = action;
+      // 高亮选中按钮
+      const parent = btn.closest('.settlement-item');
+      parent.querySelectorAll('.btn-settle').forEach(b => b.style.opacity = '0.4');
+      btn.style.opacity = '1';
+    });
+  });
+
+  // 关闭
+  document.getElementById('settlementClose').addEventListener('click', () => {
+    overlay.classList.remove('open');
+  });
+
+  // 完成结算
+  document.getElementById('settlementDone').addEventListener('click', async () => {
+    let changed = false;
+    items.forEach((item, idx) => {
+      const action = actions[idx];
+      if (!action || action === 'skip') return;
+
+      const acc = item.acc;
+      if (action === 'full') {
+        // 全额还款：标记已还，推进分期
+        acc.paidAmount = item.billAmount;
+        changed = true;
+        // 推进分期到下一期
+        advanceInstallments(acc);
+      } else if (action === 'min') {
+        // 最低还款：只标记已还最低
+        acc.paidAmount = acc.minPayment || item.billAmount;
+        changed = true;
+        // 分期仍然推进（分期部分已还）
+        advanceInstallments(acc);
+      }
+    });
+
+    if (changed) {
+      DATA.meta.lastUpdated = dayjs().format('YYYY-MM-DD');
+      overlay.classList.remove('open');
+      // 刷新界面
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
+      init();
+      // 保存到云端
+      await saveData();
+      showToast('✅ 结算完成，数据已同步');
+    } else {
+      overlay.classList.remove('open');
+    }
+  });
+}
+
+// 推进分期到下一期：remainingMonths-1, remainingAmount减一期月供
+function advanceInstallments(acc) {
+  if (!acc.installments || acc.installments.length === 0) return;
+  acc.installments.forEach(inst => {
+    if (inst.remainingMonths <= 0) return;
+    inst.remainingMonths -= 1;
+    // remainingAmount 减去一期（本金+利息，即月供）
+    const monthlyTotal = inst.monthlyPayment || 0;
+    inst.remainingAmount = Math.max(0, (inst.remainingAmount || 0) - monthlyTotal);
+    // 更新剩余本金和利息
+    if (inst.remainingPrincipal != null && inst.principalPerMonth) {
+      inst.remainingPrincipal = Math.max(0, inst.remainingPrincipal - inst.principalPerMonth);
+    }
+    if (inst.remainingInterest != null && inst.interestPerMonth != null) {
+      inst.remainingInterest = Math.max(0, inst.remainingInterest - inst.interestPerMonth);
+    }
+    // 如果有 paidPeriods 字段，也推进
+    if (inst.paidPeriods != null) {
+      inst.paidPeriods += 1;
+    }
+  });
+
+  // 推进账单周期：当期变为下一期
+  // currentBillAmount 清零（等下期出账后再更新），或者如果是纯分期卡可以预算下期
+  const nextBillAmount = acc.installments.reduce((s, i) => {
+    if (i.remainingMonths <= 0) return s;
+    return s + (i.monthlyPayment || 0);
+  }, 0);
+
+  // 推进还款日到下个月
+  if (acc.currentDueDate) {
+    const nextDue = dayjs(acc.currentDueDate).add(1, 'month');
+    acc.currentDueDate = nextDue.format('YYYY-MM-DD');
+  }
+  if (acc.currentBillStart) {
+    acc.currentBillStart = dayjs(acc.currentBillStart).add(1, 'month').format('YYYY-MM-DD');
+  }
+  if (acc.currentBillEnd) {
+    acc.currentBillEnd = dayjs(acc.currentBillEnd).add(1, 'month').format('YYYY-MM-DD');
+  }
+
+  // 如果是纯分期卡（没有日常消费），可以预设下期账单金额
+  acc.currentBillAmount = nextBillAmount > 0 ? nextBillAmount : 0;
+  acc.paidAmount = 0; // 重置已还金额
+  acc.minPayment = nextBillAmount > 0 ? nextBillAmount : 0;
+}
+
+// 页面加载后延迟检查结算（等数据加载完）
+function initAutoSettle() {
+  // 延迟3秒检查，确保数据已加载
+  setTimeout(() => {
+    if (DATA) checkAndAutoSettle();
+  }, 3000);
 }
 
 // ===== AI 消费识别（多轮对话版）=====
