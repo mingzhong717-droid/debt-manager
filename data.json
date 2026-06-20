@@ -190,11 +190,13 @@
           "dueDay": 28,
           "minPayment": 15656.33,
           "minPaymentOneTime": true,
-          "currentBillStart": "2026-04-29",
-          "currentBillEnd": "2026-05-28",
+          "currentBillStart": "2026-05-29",
+          "currentBillEnd": "2026-06-28",
           "currentDueDate": "2026-07-17",
+          "currentBillAmount": 7094.00,
+          "paidAmount": 1826.21,
           "interestRate": 0.0005,
-          "note": "5月账单剩余待还15,656.33元（已还1,826.21元，一次性历史欠款，非每月固定），6月未出账7,036.61元（6月28日出账）。7月起月供=现金分期659.66+商户分期138.05=797.71元",
+          "note": "6月未出账7,094.00元（6月28日出账），已还款1,826.21元（6/17还款800+936.21+90）。5月账单15,656.33已结清。7月起月供=现金分期659.66+商户分期138.05=797.71元",
           "installments": [
             {
               "id": "spdb-inst-cash",
@@ -1142,6 +1144,96 @@
       "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
       "note": "财付通-Apple[入账中]"
+    },
+    {
+      "id": "spdb-exp-20260618-01",
+      "date": "2026-06-18",
+      "amount": 20.79,
+      "category": "其他",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "支付宝-支付宝支付科技有限公司"
+    },
+    {
+      "id": "spdb-exp-20260618-02",
+      "date": "2026-06-18",
+      "amount": 36.60,
+      "category": "交通出行",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "抖音支付-高德打车"
+    },
+    {
+      "id": "spdb-exp-20260617-01",
+      "date": "2026-06-17",
+      "amount": -800.00,
+      "category": "转账还款",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "网联自助转入(财付通支付)[还款]"
+    },
+    {
+      "id": "spdb-exp-20260617-02",
+      "date": "2026-06-17",
+      "amount": -936.21,
+      "category": "转账还款",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "银联入账/钟明/2088****01[还款]"
+    },
+    {
+      "id": "spdb-exp-20260617-03",
+      "date": "2026-06-17",
+      "amount": -90.00,
+      "category": "转账还款",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "银联入账/钟明/2088****01[还款]"
+    },
+    {
+      "id": "spdb-exp-20260611-01",
+      "date": "2026-06-11",
+      "amount": 8.16,
+      "category": "交通出行",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "抖音支付-高德打车"
+    },
+    {
+      "id": "spdb-exp-20260605-01",
+      "date": "2026-06-05",
+      "amount": 1.95,
+      "category": "其他",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "支付宝-北京三快在线科技有限公司"
+    },
+    {
+      "id": "spdb-exp-20260604-01",
+      "date": "2026-06-04",
+      "amount": 4.84,
+      "category": "餐饮堂食",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "鹏达小吃店"
+    },
+    {
+      "id": "spdb-exp-20260603-01",
+      "date": "2026-06-03",
+      "amount": 7011.02,
+      "category": "日用百货",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "里白百货"
+    },
+    {
+      "id": "spdb-exp-20260529-01",
+      "date": "2026-05-29",
+      "amount": 10.64,
+      "category": "交通出行",
+      "payment": "浦发信用卡",
+      "cardId": "spdb-credit-1",
+      "note": "抖音支付-高德打车"
     }
   ]
 }
