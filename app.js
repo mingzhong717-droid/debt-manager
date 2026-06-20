@@ -1097,10 +1097,11 @@ function renderInstallments() {
         ? inst.remainingInterest
         : Math.round(interestPerMonth * monthsLeft * 100) / 100;
       let scheduleHTML = '';
+      const paidPeriods = totalMonths - monthsLeft; // 已还期数
       for (let i = 0; i < totalMonths; i++) {
         const periodDate = startDate.add(i, 'month');
-        const isPast = periodDate.isBefore(today, 'month');
-        const isCurrent = periodDate.isSame(today, 'month');
+        const isPast = i < paidPeriods;
+        const isCurrent = i === paidPeriods;
         const isLast = i === totalMonths - 1;
         // 最后一期本金取尾差
         const principal = isLast
