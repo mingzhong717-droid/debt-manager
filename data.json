@@ -422,8 +422,11 @@
           "dueDay": 3,
           "dueDayNextMonth": true,
           "minPayment": 0,
+          "currentBillStart": "2026-05-25",
+          "currentBillEnd": "2026-07-14",
+          "currentDueDate": "2026-07-22",
           "interestRate": 0,
-          "note": "当前：25日出账，次月3日还款。可选15/20/25日还款（对应5/10/15日出账）。建议调整为25日还款（15日出账），月底还款压力最小且与花呗20日错开。暂未使用，余额0。",
+          "note": "7月账单76.69元（入账周期05-25至07-14），7月22日还款。4笔外卖消费。可用额度4923.31",
           "installments": []
         }
       ]
