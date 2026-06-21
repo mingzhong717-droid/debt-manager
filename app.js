@@ -444,32 +444,30 @@ function getUnpaidTotal(cardId) {
   const expenses = getExpenses();
   const cfg = CARD_BILLING[cardId];
 
-  // 如果当期账单已出（currentBillAmount > 0），未出账只算账单截止日之后的消费
-  // 避免已出账消费与 currentBillAmount 重复计入
+  // 如果当期账单已出（currentBillAmount > 0 且 currentBillEnd 早于今天），
+  // 未出账只算账单截止日之后的消费，避免已出账消费与 currentBillAmount 重复计入。
+  // 如果 currentBillEnd 在今天或之后，说明当前期还没出账，保持原始 cycleStart。
   let acc = null;
   if (DATA && DATA.banks) {
     DATA.banks.forEach(b => b.accounts.forEach(a => { if (a.id === cardId) acc = a; }));
   }
   if (acc && acc.currentBillAmount > 0) {
-    if (acc.currentBillEnd) {
-      // 有明确的账单截止日，账单日当天消费归入下期，未出账从当天开始
-      cycleStart = dayjs(acc.currentBillEnd).startOf('day');
-    } else {
-      // 没有 currentBillEnd：当期已出账，未出账从"出账日"开始
-      // 出账日 = 本月 billDay（如果今天 >= billDay）或上月 billDay（如果今天 < billDay）
-      // 但既然已出账，这些消费都在账单里了，未出账应从出账日之后开始
+    const billEndDate = acc.currentBillEnd ? dayjs(acc.currentBillEnd) : null;
+    const billAlreadyIssued = billEndDate && billEndDate.isBefore(today, 'day');
+    if (billAlreadyIssued) {
+      // 账单已出，未出账从 currentBillEnd 当天开始（billDay 当天消费归入下期）
+      cycleStart = billEndDate.startOf('day');
+    } else if (!acc.currentBillEnd) {
+      // 没有 currentBillEnd 且账单已出：按 billDay 推算
       const billDay = cfg.billDay;
       const now = today;
-      // 账单已出，cycleStart 应该是出账日（即 billDay 当天之后的消费才是未出账）
       if (now.date() >= billDay) {
         cycleStart = now.date(billDay).startOf('day');
       } else {
-        // 今天 < billDay，但账单已出 → 上月出的账，未出账从上月 billDay 开始到现在
-        // 但这些消费已经在 currentBillAmount 里了，所以未出账应从今天往后
-        // 简化：直接用 cycleEnd+1 作为起点（即没有未出账消费）
         cycleStart = cycleEnd.add(1, 'day');
       }
     }
+    // else: currentBillEnd >= today，当前期还没出账，保持原始 cycleStart
   }
 
   const cardName = cfg.name;
@@ -2291,12 +2289,15 @@ function renderBillingStatus() {
     if (!cycle) return;
     let { cycleStart, cycleEnd } = cycle;
 
-    // 如果当期账单已出（currentBillAmount > 0），未出账只算账单截止日之后的消费
-    // 避免已出账消费与 currentBillAmount 重复计入（与 getUnpaidTotal 逻辑一致）
+    // 如果当期账单已出（currentBillAmount > 0 且 currentBillEnd 早于今天），
+    // 未出账只算账单截止日之后的消费，避免重复计入。
+    // 如果 currentBillEnd 在今天或之后，说明当前期还没出账，保持原始 cycleStart。
     if (accData && accData.currentBillAmount > 0) {
-      if (accData.currentBillEnd) {
-        cycleStart = dayjs(accData.currentBillEnd).startOf('day');
-      } else {
+      const billEndDate = accData.currentBillEnd ? dayjs(accData.currentBillEnd) : null;
+      const billAlreadyIssued = billEndDate && billEndDate.isBefore(today, 'day');
+      if (billAlreadyIssued) {
+        cycleStart = billEndDate.startOf('day');
+      } else if (!accData.currentBillEnd) {
         const billDay = cfg.billDay;
         if (now.date() >= billDay) {
           cycleStart = now.date(billDay).startOf('day');
@@ -2304,6 +2305,7 @@ function renderBillingStatus() {
           cycleStart = cycleEnd.add(1, 'day');
         }
       }
+      // else: currentBillEnd >= today，当前期还没出账，保持原始 cycleStart
     }
 
     // 本周期内的消费（未出账），排除主动还款
