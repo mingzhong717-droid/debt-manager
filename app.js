@@ -452,8 +452,8 @@ function getUnpaidTotal(cardId) {
   }
   if (acc && acc.currentBillAmount > 0) {
     if (acc.currentBillEnd) {
-      // 有明确的账单截止日，未出账从次日开始
-      cycleStart = dayjs(acc.currentBillEnd).add(1, 'day').startOf('day');
+      // 有明确的账单截止日，账单日当天消费归入下期，未出账从当天开始
+      cycleStart = dayjs(acc.currentBillEnd).startOf('day');
     } else {
       // 没有 currentBillEnd：当期已出账，未出账从"出账日"开始
       // 出账日 = 本月 billDay（如果今天 >= billDay）或上月 billDay（如果今天 < billDay）
@@ -2295,7 +2295,7 @@ function renderBillingStatus() {
     // 避免已出账消费与 currentBillAmount 重复计入（与 getUnpaidTotal 逻辑一致）
     if (accData && accData.currentBillAmount > 0) {
       if (accData.currentBillEnd) {
-        cycleStart = dayjs(accData.currentBillEnd).add(1, 'day').startOf('day');
+        cycleStart = dayjs(accData.currentBillEnd).startOf('day');
       } else {
         const billDay = cfg.billDay;
         if (now.date() >= billDay) {
