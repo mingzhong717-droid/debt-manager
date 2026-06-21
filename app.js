@@ -508,7 +508,14 @@ function getNetDebt(acc) {
 // ===== 计算信用卡已用额度（动态）=====
 function calcUsedCredit(acc) {
   if (acc.type !== 'credit') return 0;
-  // 账单剩余 = 当期账单 - 已还
+
+  // 如果有 totalDebt（银行提供的真实已用额度），优先使用
+  // totalDebt 已包含账单、分期本金+利息等全部占用，比拼凑计算更准确
+  if (acc.totalDebt > 0 && acc.creditLimit > 0) {
+    return acc.totalDebt;
+  }
+
+  // 兜底：动态拼凑计算
   const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : 0);
   const paidAmount = acc.paidAmount || 0;
   const billRemaining = Math.max(0, billAmount - paidAmount);
