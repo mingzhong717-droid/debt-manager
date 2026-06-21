@@ -67,6 +67,13 @@ function resolveCardFromNote(note, currentPayment) {
   return null;
 }
 
+// ===== 折叠/展开区块 =====
+function toggleSection(titleEl) {
+  titleEl.classList.toggle('collapsed');
+  const body = titleEl.nextElementSibling;
+  if (body) body.classList.toggle('collapsed');
+}
+
 // ===== 全局状态 =====
 let DATA = null;
 let pieChart = null;
