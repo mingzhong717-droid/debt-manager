@@ -3190,7 +3190,7 @@ async function handleAISend() {
       const parsed = parseAIResult(raw);
       streamBubble.parsed = parsed;
       renderAIChat();
-      await handleAIIntent(parsed);
+      await handleAIIntent(parsed, streamBubble);
       saveAIChatHistory();
     }
 
@@ -3357,7 +3357,7 @@ function parseAIResult(raw) {
 }
 
 // 根据 AI 识别的意图执行对应操作
-async function handleAIIntent(parsed) {
+async function handleAIIntent(parsed, bubble) {
   if (!parsed) return;
   const intent = parsed.intent || 'add_expense';
 
@@ -3391,7 +3391,8 @@ async function handleAIIntent(parsed) {
     await aiUpdateInstallment(parsed);
 
   } else if (intent === 'update_bill') {
-    await aiUpdateBill(parsed);
+    const billOk = await aiUpdateBill(parsed);
+    if (!billOk && bubble) { bubble.actionFailed = true; renderAIChat(); }
 
   } else if (intent === 'delete_installment') {
     await aiDeleteInstallment(parsed);
@@ -3443,12 +3444,7 @@ async function aiConfirmLoan(parsed) {
 async function aiConfirmInstallment(parsed) {
   if (!DATA || !parsed) return;
   // 找对应信用卡账户
-  let targetAcc = null;
-  DATA.banks.forEach(b => b.accounts.forEach(a => {
-    if (a.type === 'credit' && (a.name.includes(parsed.cardName) || parsed.cardName.includes(a.name))) {
-      targetAcc = a;
-    }
-  }));
+  const targetAcc = findCreditAccount(parsed.cardName || '');
   if (!targetAcc) { showToast('❌ 未找到对应信用卡，请检查卡名'); return; }
   if (!targetAcc.installments) targetAcc.installments = [];
   targetAcc.installments.push({
@@ -3476,15 +3472,11 @@ async function aiUpdateInstallment(parsed) {
   if (!DATA || !parsed) return;
   const cardName = parsed.cardName || '';
   const instName = parsed.instName || '';
-  let targetAcc = null, targetInst = null;
-  DATA.banks.forEach(b => b.accounts.forEach(a => {
-    if ((a.type === 'credit' || a.type === 'huabei') && (a.name.includes(cardName) || cardName.includes(a.name))) {
-      if (a.installments) {
-        const found = a.installments.find(i => i.name.includes(instName) || instName.includes(i.name));
-        if (found) { targetAcc = a; targetInst = found; }
-      }
-    }
-  }));
+  const targetAcc = findCreditAccount(cardName);
+  let targetInst = null;
+  if (targetAcc && targetAcc.installments) {
+    targetInst = targetAcc.installments.find(i => i.name.includes(instName) || instName.includes(i.name));
+  }
   if (!targetInst) { showToast('❌ 未找到对应分期，请检查卡名和分期名'); setAIStatus('', ''); return; }
 
   const action = parsed.action || 'set';
@@ -3510,17 +3502,53 @@ async function aiUpdateInstallment(parsed) {
   setAIStatus('✅ 分期已更新', 'success');
 }
 
-// AI修改账单
-async function aiUpdateBill(parsed) {
-  if (!DATA || !parsed) return;
-  const cardName = parsed.cardName || '';
+// 模糊匹配信用卡账户：支持"民生信用卡"匹配"民生银行信用卡"等
+function findCreditAccount(cardName) {
+  if (!DATA || !cardName) return null;
   let targetAcc = null;
+  // 1. 先尝试通过 PAYMENT_TO_CARD 精确映射
+  const cardId = PAYMENT_TO_CARD[cardName];
+  if (cardId) {
+    DATA.banks.forEach(b => b.accounts.forEach(a => {
+      if (a.id === cardId) targetAcc = a;
+    }));
+    if (targetAcc) return targetAcc;
+  }
+  // 2. 直接 includes 匹配
   DATA.banks.forEach(b => b.accounts.forEach(a => {
     if ((a.type === 'credit' || a.type === 'huabei') && (a.name.includes(cardName) || cardName.includes(a.name))) {
       targetAcc = a;
     }
   }));
-  if (!targetAcc) { showToast('❌ 未找到对应账户，请检查卡名'); setAIStatus('', ''); return; }
+  if (targetAcc) return targetAcc;
+  // 3. 去掉"银行"二字后再匹配（"民生信用卡" vs "民生银行信用卡"）
+  const stripped = cardName.replace('银行', '');
+  DATA.banks.forEach(b => b.accounts.forEach(a => {
+    if ((a.type === 'credit' || a.type === 'huabei') && (a.name.replace('银行', '').includes(stripped) || stripped.includes(a.name.replace('银行', '')))) {
+      targetAcc = a;
+    }
+  }));
+  if (targetAcc) return targetAcc;
+  // 4. 用 bank shortName 匹配（"民生" → 民生银行信用卡）
+  const keywords = cardName.replace(/信用卡|银行/g, '');
+  if (keywords.length >= 2) {
+    DATA.banks.forEach(b => {
+      if (b.shortName && (b.shortName.includes(keywords) || keywords.includes(b.shortName) || b.name.includes(keywords))) {
+        b.accounts.forEach(a => {
+          if (a.type === 'credit' || a.type === 'huabei') targetAcc = a;
+        });
+      }
+    });
+  }
+  return targetAcc;
+}
+
+// AI修改账单（返回 true/false 表示是否成功）
+async function aiUpdateBill(parsed) {
+  if (!DATA || !parsed) return false;
+  const cardName = parsed.cardName || '';
+  const targetAcc = findCreditAccount(cardName);
+  if (!targetAcc) { showToast('❌ 未找到对应账户，请检查卡名'); setAIStatus('', ''); return false; }
 
   if (parsed.currentBillAmount !== undefined) targetAcc.currentBillAmount = parsed.currentBillAmount;
   if (parsed.paidAmount !== undefined) targetAcc.paidAmount = parsed.paidAmount;
@@ -3533,6 +3561,7 @@ async function aiUpdateBill(parsed) {
   renderBankCards();
   showToast(`✅ ${targetAcc.name}账单已更新`);
   setAIStatus('✅ 账单已更新', 'success');
+  return true;
 }
 
 // AI删除分期
@@ -3540,15 +3569,11 @@ async function aiDeleteInstallment(parsed) {
   if (!DATA || !parsed) return;
   const cardName = parsed.cardName || '';
   const instName = parsed.instName || '';
-  let targetAcc = null, targetIdx = -1;
-  DATA.banks.forEach(b => b.accounts.forEach(a => {
-    if ((a.type === 'credit' || a.type === 'huabei') && (a.name.includes(cardName) || cardName.includes(a.name))) {
-      if (a.installments) {
-        const idx = a.installments.findIndex(i => i.name.includes(instName) || instName.includes(i.name));
-        if (idx !== -1) { targetAcc = a; targetIdx = idx; }
-      }
-    }
-  }));
+  const targetAcc = findCreditAccount(cardName);
+  let targetIdx = -1;
+  if (targetAcc && targetAcc.installments) {
+    targetIdx = targetAcc.installments.findIndex(i => i.name.includes(instName) || instName.includes(i.name));
+  }
   if (!targetAcc || targetIdx === -1) { showToast('❌ 未找到对应分期，请检查卡名和分期名'); setAIStatus('', ''); return; }
 
   const removed = targetAcc.installments.splice(targetIdx, 1)[0];
@@ -3723,7 +3748,7 @@ function renderAIChat(preserveScroll) {
             ${p.minPayment !== undefined ? `<div class="ai-parsed-row"><span>⚠️ 最低还款</span><strong>¥${p.minPayment}</strong></div>` : ''}
             ${p.note ? `<div class="ai-parsed-row"><span>📝 备注</span><strong>${escHtml(p.note)}</strong></div>` : ''}
           </div>
-          <div class="ai-bubble-hint">✅ 已自动更新账单</div>
+          <div class="ai-bubble-hint">${b.actionFailed ? '❌ 更新失败：未找到对应账户' : '✅ 已自动更新账单'}</div>
         </div>`;
 
       } else if (intent === 'delete_installment') {
