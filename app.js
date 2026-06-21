@@ -2334,13 +2334,28 @@ function renderBillingStatus() {
     // 已出账单期间的消费明细
     // 注意：billEnd 通常为出账日（如6/3），但出账日当天的消费归入下一期
     // 因此已出账明细范围为 billStart ~ billEnd前一天（不含billEnd当天）
-    const billedExpenseList = (billStart && billEnd) ? expenses.filter(e => {
+    let billedExpenseList = (billStart && billEnd) ? expenses.filter(e => {
       const d = dayjs(e.date);
       const dateOk = d.isAfter(billStart.subtract(1, 'day')) && d.isBefore(billEnd);
       if (!dateOk) return false;
       return e.cardId === cardId ||
              (e.payment && (e.payment === cardName || e.payment.includes(bankShort)));
     }).sort((a, b) => dayjs(b.date).diff(dayjs(a.date))) : [];
+
+    // 将分期当期月供作为虚拟条目插入已出账明细（信用卡账单里包含分期月供）
+    if (accData.installments && accData.installments.length > 0 && accData.currentBillAmount > 0) {
+      const instEntries = accData.installments.filter(i => i.remainingMonths > 0 || i.paidPeriods > 0).map(i => {
+        const period = (i.paidPeriods || 0) + 1;
+        return {
+          date: accData.currentDueDate || (billEnd ? billEnd.format('YYYY-MM-DD') : now.format('YYYY-MM-DD')),
+          amount: i.monthlyPayment || 0,
+          note: `${i.name} 第${period}期`,
+          category: '分期还款',
+          _isInstallment: true
+        };
+      });
+      billedExpenseList = [...instEntries, ...billedExpenseList];
+    }
 
     // 下次还款日：优先读 data.json 里的 currentDueDate（真实数据），避免推算错误
     let dueDate = null;
@@ -2367,14 +2382,20 @@ function renderBillingStatus() {
   // 渲染明细行的辅助函数
   function renderExpenseRows(list) {
     if (!list || list.length === 0) return '<div style="padding:8px 12px;color:var(--text-muted);font-size:0.8rem">暂无消费记录</div>';
-    return list.map(e => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-top:1px solid var(--border);font-size:0.8rem">
+    return list.map(e => {
+      const isInst = e._isInstallment;
+      const noteColor = isInst ? 'var(--warning)' : 'var(--text)';
+      const amountColor = e.amount < 0 ? 'var(--success)' : isInst ? 'var(--warning)' : 'var(--text)';
+      const icon = isInst ? '📋 ' : '';
+      return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;border-top:1px solid var(--border);font-size:0.8rem${isInst ? ';background:var(--bg-alt,rgba(255,165,0,0.05))' : ''}">
         <div style="flex:1;min-width:0">
           <span style="color:var(--text-muted);margin-right:6px">${dayjs(e.date).format('M/D')}</span>
-          <span style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block;vertical-align:bottom">${e.note || e.category || '-'}</span>
+          <span style="color:${noteColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block;vertical-align:bottom">${icon}${e.note || e.category || '-'}</span>
         </div>
-        <span style="color:${e.amount < 0 ? 'var(--success)' : 'var(--text)'};font-weight:500;margin-left:8px;white-space:nowrap">${e.amount < 0 ? '-' : ''}${fmt(Math.abs(e.amount))}</span>
-      </div>`).join('');
+        <span style="color:${amountColor};font-weight:500;margin-left:8px;white-space:nowrap">${e.amount < 0 ? '-' : ''}${fmt(Math.abs(e.amount))}</span>
+      </div>`;
+    }).join('');
   }
 
   // 渲染
