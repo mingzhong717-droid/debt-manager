@@ -23,6 +23,7 @@ function renderRepaymentPlan() {
 
       if (acc.type === 'loan') {
         amount = acc.monthlyPayment || 0;
+        if (acc.paidThisMonth) { status = 'paid'; }
       } else if (acc.type === 'credit') {
         const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
         const paidAmount = acc.paidAmount || 0;
@@ -44,6 +45,8 @@ function renderRepaymentPlan() {
       if (daysLeft < 0 && amount === 0) return; // 已过期且已还清，不显示
 
       items.push({
+        accId: acc.id,
+        accType: acc.type,
         bankName: bank.shortName,
         bankIcon: bank.icon,
         bankColor: bank.color,
@@ -71,8 +74,10 @@ function renderRepaymentPlan() {
     const statusText = item.status === 'paid' ? '✅ 已还清' : item.status === 'overdue' ? '⚠️ 已逾期' : `${item.daysLeft}天后`;
     const amountText = item.status === 'paid' ? '<s>' + fmt(item.amount) + '</s>' : fmt(item.amount);
 
+    const markBtn = item.status !== 'paid' ? `<button class="plan-pay-btn" onclick="markAccountPaid('${item.accId}','${item.accType}')">✅ 标记已还</button>` : '';
+
     html += `
-      <div class="repayment-plan-item ${statusClass}">
+      <div class="repayment-plan-item ${statusClass}" data-acc-id="${item.accId}">
         <div class="plan-left">
           <span class="plan-icon" style="color:${item.bankColor}">${item.bankIcon}</span>
           <div class="plan-info">
@@ -83,6 +88,7 @@ function renderRepaymentPlan() {
         <div class="plan-right">
           <div class="plan-amount">${amountText}</div>
           <div class="plan-due">${item.dueDate.format('MM/DD')} · ${statusText}</div>
+          ${markBtn}
         </div>
       </div>`;
   });
@@ -90,27 +96,24 @@ function renderRepaymentPlan() {
   container.innerHTML = html;
 }
 
-// ===== 功能2: 标记已还按钮（在还款计划中）=====
-function renderMarkPaidButtons() {
-  const container = document.getElementById('repaymentPlanList');
-  if (!container || !DATA) return;
+// ===== 功能2: 标记已还按钮（已集成到 renderRepaymentPlan 中）=====
 
-  // 在每个未还清的 plan-item 上添加点击事件
-  container.querySelectorAll('.repayment-plan-item:not(.plan-paid)').forEach(item => {
-    item.style.cursor = 'pointer';
-    item.title = '点击标记为已还';
-  });
-}
-
-async function markAccountPaid(accId) {
+async function markAccountPaid(accId, accType) {
   if (!DATA) return;
+  if (!confirm('确认标记该笔为已还？')) return;
   let found = false;
   DATA.banks.forEach(bank => {
     bank.accounts.forEach(acc => {
-      if (acc.id === accId && acc.type === 'credit') {
-        const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
-        acc.paidAmount = billAmount;
-        found = true;
+      if (acc.id === accId) {
+        if (acc.type === 'credit') {
+          const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
+          acc.paidAmount = billAmount;
+          found = true;
+        } else if (acc.type === 'loan') {
+          // 贷款标记本月已还
+          acc.paidThisMonth = true;
+          found = true;
+        }
       }
     });
   });

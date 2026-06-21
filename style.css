@@ -2473,6 +2473,9 @@ align-items: center;
 .plan-paid .plan-amount { color: #00d4aa; }
 .plan-overdue { border-left: 3px solid #ff4d6d; padding-left: 12px; }
 .plan-urgent .plan-due { color: #ff4d6d; font-weight: 600; }
+.plan-pay-btn { margin-top: 4px; padding: 3px 10px; font-size: 11px; border: 1px solid #4caf50; color: #4caf50; background: #f0fff0; border-radius: 12px; cursor: pointer; transition: all .2s; }
+.plan-pay-btn:hover { background: #4caf50; color: #fff; }
+.plan-paid .plan-pay-btn { display: none; }
 
 /* 大额到期预警 */
 .large-due-card {
