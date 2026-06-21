@@ -2386,8 +2386,10 @@ function renderBillingStatus() {
       dueDate = billing?.dueDate || null;
     }
     const daysUntilDue = dueDate ? dueDate.diff(now, 'day') : null;
-    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
-    const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+    // 已还清（paidAmount >= currentBillAmount）时不算逾期
+    const billPaid = accData && accData.paidAmount >= (accData.currentBillAmount || 0) && accData.paidAmount > 0;
+    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && !billPaid;
+    const isOverdue = daysUntilDue !== null && daysUntilDue < 0 && !billPaid;
 
     cards.push({
       cardId, cfg, accData,
