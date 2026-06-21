@@ -2741,11 +2741,91 @@ function advanceInstallments(acc) {
   acc.minPayment = nextBillAmount > 0 ? nextBillAmount : 0;
 }
 
+// ===== 出账日自动推进账单周期 =====
+// 当今天已过出账日（billDay），且 currentBillEnd 还停留在上一期，自动推进到新一期
+async function checkAndAdvanceBillCycle() {
+  if (!DATA) return;
+  const now = today;
+  let changed = false;
+
+  DATA.banks.forEach(bank => {
+    bank.accounts.forEach(acc => {
+      if (acc.type !== 'credit') return;
+      if (!acc.currentBillEnd) return;
+
+      const cfg = CARD_BILLING[acc.id];
+      if (!cfg) return;
+      const billDay = cfg.billDay;
+
+      // 计算当前应该的出账日：如果今天 >= billDay，本月 billDay 就是最近的出账日
+      // 如果今天 < billDay，上月 billDay 是最近的出账日
+      let latestBillDate;
+      if (now.date() >= billDay) {
+        latestBillDate = now.date(billDay).startOf('day');
+      } else {
+        latestBillDate = now.subtract(1, 'month').date(billDay).startOf('day');
+      }
+
+      const currentBillEnd = dayjs(acc.currentBillEnd);
+
+      // 如果 currentBillEnd 早于最近的出账日，说明需要推进
+      // 可能需要推进多期（比如很久没打开页面）
+      let advanceCount = 0;
+      let tempBillEnd = currentBillEnd;
+      while (tempBillEnd.isBefore(latestBillDate, 'day')) {
+        tempBillEnd = tempBillEnd.add(1, 'month');
+        advanceCount++;
+        if (advanceCount > 12) break; // 安全限制
+      }
+
+      if (advanceCount === 0) return;
+
+      // 推进账单周期
+      const newBillStart = dayjs(acc.currentBillStart).add(advanceCount, 'month').format('YYYY-MM-DD');
+      const newBillEnd = currentBillEnd.add(advanceCount, 'month').format('YYYY-MM-DD');
+      const newDueDate = acc.currentDueDate
+        ? dayjs(acc.currentDueDate).add(advanceCount, 'month').format('YYYY-MM-DD')
+        : null;
+
+      // 计算新一期账单金额（分期月供总额 + 未出账消费不计入，因为还没出账）
+      const instTotal = (acc.installments || []).reduce((s, i) => {
+        if (i.remainingMonths <= 0) return s;
+        return s + (i.monthlyPayment || 0);
+      }, 0);
+
+      console.log(`[AutoBill] ${acc.name}: 推进${advanceCount}期, ${acc.currentBillStart}~${acc.currentBillEnd} → ${newBillStart}~${newBillEnd}, 账单=${instTotal}`);
+
+      acc.currentBillStart = newBillStart;
+      acc.currentBillEnd = newBillEnd;
+      if (newDueDate) acc.currentDueDate = newDueDate;
+      acc.currentBillAmount = instTotal > 0 ? instTotal : 0;
+      acc.minPayment = instTotal > 0 ? instTotal : 0;
+      acc.paidAmount = 0; // 新一期未还款
+      changed = true;
+    });
+  });
+
+  if (changed) {
+    DATA.meta.lastUpdated = dayjs().format('YYYY-MM-DD');
+    await saveData();
+    console.log('[AutoBill] 账单周期已自动推进并保存');
+    // 刷新界面
+    if (pieChart) pieChart.destroy();
+    if (barChart) barChart.destroy();
+    init();
+    showToast('📋 账单周期已自动更新', 3000);
+  }
+}
+
 // 页面加载后延迟检查结算（等数据加载完）
 function initAutoSettle() {
   // 延迟3秒检查，确保数据已加载
-  setTimeout(() => {
-    if (DATA) checkAndAutoSettle();
+  setTimeout(async () => {
+    if (!DATA) return;
+    // 先检查出账日推进
+    await checkAndAdvanceBillCycle();
+    // 再检查还款日结算
+    checkAndAutoSettle();
   }, 3000);
 }
 
