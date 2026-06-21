@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="负债管理" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 
-  <link rel="stylesheet" href="style.css?v=20260619r" />
+  <link rel="stylesheet" href="style.css?v=20260622e" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
     onerror="console.warn('[CDN] chart.js 加载失败，图表功能不可用')"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"
@@ -75,6 +75,7 @@
       <div class="summary-item">
         <div class="summary-label">总负债</div>
         <div class="summary-value danger" id="totalDebt">--</div>
+        <div class="summary-sub" id="debtBreakdown"></div>
       </div>
       <div class="summary-divider"></div>
       <div class="summary-item">
@@ -559,7 +560,7 @@
 <!-- ===== 回到顶部按钮 ===== -->
 <button id="backToTopBtn" title="回到顶部">↑</button>
 
-<script src="app.js?v=20260622d"></script>
+<script src="app.js?v=20260622e"></script>
 
 <!-- Service Worker 注册 & 自动更新 -->
 <script>

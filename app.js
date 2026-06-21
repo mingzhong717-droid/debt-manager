@@ -543,14 +543,23 @@ function calcSummary() {
   let totalDebt = 0;
   let monthlyDue = 0;
   let nextDue = null;
+  let totalPrincipal = 0;
+  let totalInterest = 0;
   const now = today;
 
   DATA.banks.forEach(bank => {
     bank.accounts.forEach(acc => {
       if (acc.type === 'loan') {
         // 贷款：直接用 totalDebt（本金余额）
-        totalDebt += acc.totalDebt || 0;
+        const loanDebt = acc.totalDebt || 0;
+        totalDebt += loanDebt;
         monthlyDue += acc.monthlyPayment || 0;
+
+        // 贷款本金 = totalDebt，利息 = 月供×剩余期数 - 本金
+        totalPrincipal += loanDebt;
+        const loanInterest = Math.max(0, (acc.monthlyPayment || 0) * (acc.remainingMonths || 0) - loanDebt);
+        totalInterest += loanInterest;
+
         const dueDay = acc.dueDay;
         let dueDate = now.date(dueDay);
         if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
@@ -560,10 +569,24 @@ function calcSummary() {
         // 信用卡：用计算值（账单剩余 + 分期待还 + 未出账消费）
         totalDebt += getNetDebt(acc);
 
-        // 月供：当期账单（含分期月供），减去已还部分
+        // 分期部分的本金和利息拆分
+        (acc.installments || []).forEach(inst => {
+          const rp = inst.remainingPrincipal != null ? inst.remainingPrincipal : (inst.remainingAmount || 0);
+          const ri = inst.remainingInterest != null ? inst.remainingInterest : 0;
+          totalPrincipal += rp;
+          totalInterest += ri;
+        });
+
+        // 非分期部分（账单剩余 + 未出账消费）视为本金
         const billAmount = (acc.currentBillAmount != null ? acc.currentBillAmount : acc.minPayment) || 0;
         const paidAmount = acc.paidAmount || 0;
-        monthlyDue += Math.max(0, billAmount - paidAmount);
+        const billRemaining = Math.max(0, billAmount - paidAmount);
+        const unpaidTotal = getUnpaidTotal(acc.id);
+        // 账单中已含分期当期月供，但分期的 remainingAmount 不含当期，所以不重复
+        totalPrincipal += billRemaining + unpaidTotal;
+
+        // 月供：当期账单（含分期月供），减去已还部分
+        monthlyDue += billRemaining;
 
         // 还款日
         const dueDay = acc.dueDay;
@@ -574,15 +597,21 @@ function calcSummary() {
     });
   });
 
-  return { totalDebt, monthlyDue, nextDue };
+  return { totalDebt, monthlyDue, nextDue, totalPrincipal, totalInterest };
 }
 
 // ===== 汇总横幅 =====
 function renderSummaryBanner() {
-  const { totalDebt, monthlyDue, nextDue } = calcSummary();
+  const { totalDebt, monthlyDue, nextDue, totalPrincipal, totalInterest } = calcSummary();
 
   document.getElementById('totalDebt').textContent = fmt(totalDebt);
   document.getElementById('monthlyDue').textContent = fmt(monthlyDue);
+
+  // 显示本金/利息拆分
+  const breakdownEl = document.getElementById('debtBreakdown');
+  if (breakdownEl) {
+    breakdownEl.textContent = `本金 ${fmt(totalPrincipal)} / 利息 ${fmt(totalInterest)}`;
+  }
 
   // 可用余额 = 所有钱包余额之和
   const wallets = DATA.meta.wallets || [];
