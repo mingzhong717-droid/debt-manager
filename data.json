@@ -1,1175 +1,1179 @@
 {
   "meta": {
-    "lastUpdated": "2026-06-19",
-    "baseIncome": 8000,
-    "currency": "CNY",
     "incomes": [],
     "wallets": [
       {
         "id": "wallet-savings",
-        "name": "储蓄卡",
         "icon": "🏦",
+        "name": "储蓄卡",
         "balance": 0
       },
       {
         "id": "wallet-wechat",
-        "name": "微信钱包",
         "icon": "💚",
-        "balance": 0
+        "name": "微信钱包",
+        "balance": 195.83
       },
       {
         "id": "wallet-alipay",
-        "name": "支付宝余额",
         "icon": "💙",
+        "name": "支付宝余额",
         "balance": 0
       }
-    ]
+    ],
+    "currency": "CNY",
+    "baseIncome": 8000,
+    "lastUpdated": "2026-06-21"
   },
   "banks": [
     {
       "id": "cmb",
-      "name": "招商银行",
-      "shortName": "招商",
-      "color": "#E31837",
       "icon": "🏦",
+      "name": "招商银行",
+      "color": "#E31837",
       "accounts": [
         {
           "id": "cmb-loan-1",
-          "type": "loan",
           "name": "贷款一·闪电贷（等额本息）",
-          "totalDebt": 9388.73,
-          "monthlyPayment": 2347.71,
-          "interestRate": 0.036,
-          "remainingMonths": 4,
+          "note": "贷款编号6655665997300001，剩余第33-36期，到期2026-09-27",
+          "type": "loan",
           "dueDay": 6,
-          "startDate": "2024-10-06",
           "endDate": "2026-09-27",
-          "note": "贷款编号6655665997300001，剩余第33-36期，到期2026-09-27"
+          "startDate": "2024-10-06",
+          "totalDebt": 9388.73,
+          "interestRate": 0.036,
+          "monthlyPayment": 2347.71,
+          "remainingMonths": 4
         },
         {
           "id": "cmb-loan-2",
-          "type": "loan",
           "name": "贷款二·闪电贷（到期还本）",
-          "totalDebt": 43537.5,
-          "monthlyPayment": 179.17,
-          "interestRate": 0.05,
-          "remainingMonths": 3,
+          "note": "贷款编号6655665997300003，到期2026-09-04需还本43,000元，🔴 大额需提前备款",
+          "type": "loan",
           "dueDay": 6,
-          "startDate": "2025-10-04",
           "endDate": "2026-09-04",
-          "note": "贷款编号6655665997300003，到期2026-09-04需还本43,000元，🔴 大额需提前备款"
+          "startDate": "2025-10-04",
+          "totalDebt": 43537.5,
+          "interestRate": 0.05,
+          "monthlyPayment": 179.17,
+          "remainingMonths": 3
         },
         {
           "id": "cmb-credit-1",
-          "type": "credit",
           "name": "招商信用卡",
-          "totalDebt": 38003.79,
-          "creditLimit": 60000,
-          "billDay": 3,
-          "dueDay": 21,
-          "minPayment": 3954.79,
-          "currentBillAmount": 23572.03,
-          "paidAmount": 3954.79,
-          "currentBillStart": "2026-05-04",
-          "currentBillEnd": "2026-06-03",
-          "currentDueDate": "2026-06-21",
-          "interestRate": 0.0005,
           "note": "6月账单（账单日6月3日）本期应还23,572.03元，最低还款3,954.79元，还款日2026-06-21。构成：上期账单22,460.78-上期还款16,460.78+本期新消费17,855.56-调整592.55+循环利息309.02。本期新消费含：旧分期第5期本金2,464.77+利息161.88-财政贴息13.37+循环利息309.02+实际消费14,649.73+退款-579.18。7月起月供=旧分期第6期2,626.65元。⚠️ 新分期尚未办理，待决策",
+          "type": "credit",
+          "dueDay": 21,
+          "billDay": 3,
+          "billNote": "本期账单原始金额23572.03已全额还清，当前预估欠款1132.10元，未出账单1132.10元，下期账单日7月3日",
+          "totalDebt": 18385.48,
+          "minPayment": 0,
+          "paidAmount": 23572.03,
+          "creditLimit": 60000,
           "installments": [
             {
               "id": "cmb-inst-old",
               "name": "信用卡旧分期（剩余7期）",
+              "note": "2026-01-21申请，12期，每期本金2464.77+利息161.88=2626.65，第12期尾差2626.60。分期利息1942.52优惠400元。第6期起进入7月账单",
+              "endDate": "2027-01-21",
+              "startDate": "2026-02-21",
+              "totalMonths": 12,
+              "monthlyPayment": 2626.65,
               "originalAmount": 29577.23,
               "remainingAmount": 18386.55,
-              "remainingPrincipal": 17253.39,
-              "remainingInterest": 1133.16,
-              "monthlyPayment": 2626.65,
-              "totalMonths": 12,
-              "principalPerMonth": 2464.77,
-              "interestPerMonth": 161.88,
               "remainingMonths": 7,
-              "startDate": "2026-02-21",
-              "endDate": "2027-01-21",
-              "note": "2026-01-21申请，12期，每期本金2464.77+利息161.88=2626.65，第12期尾差2626.60。分期利息1942.52优惠400元。第6期起进入7月账单"
+              "interestPerMonth": 161.88,
+              "principalPerMonth": 2464.77,
+              "remainingInterest": 1133.16,
+              "remainingPrincipal": 17253.39
             }
-          ]
+          ],
+          "interestRate": 0.0005,
+          "currentBillEnd": "2026-06-03",
+          "currentDueDate": "2026-06-21",
+          "currentBillStart": "2026-05-04",
+          "currentBillAmount": 23572.03
         }
-      ]
+      ],
+      "shortName": "招商"
     },
     {
       "id": "gzbank",
-      "name": "广州银行",
-      "shortName": "广州",
-      "color": "#FF6B35",
       "icon": "🏛️",
+      "name": "广州银行",
+      "color": "#FF6B35",
       "accounts": [
         {
           "id": "gz-credit-1",
-          "type": "credit",
           "name": "广州银行信用卡",
-          "totalDebt": 15685.86,
-          "creditLimit": 24000,
-          "billDay": 13,
+          "note": "8月账单698.88元（账单日7月13日），2026-08-02到期。7月2日已还上期702.20元。698.88元=三笔分期第11期合计（本金611.91+利息86.97）",
+          "type": "credit",
           "dueDay": 2,
+          "billDay": 13,
+          "totalDebt": 16651.91,
           "minPayment": 698.88,
-          "currentBillStart": "2026-06-14",
-          "currentBillEnd": "2026-07-13",
-          "currentDueDate": "2026-08-02",
-          "interestRate": 0.0005,
-          "currentBillAmount": 698.88,
-              "paidAmount": 0,
-              "note": "8月账单698.88元（账单日7月13日），2026-08-02到期。7月2日已还上期702.20元。698.88元=三笔分期第11期合计（本金611.91+利息86.97）",
+          "paidAmount": 0,
+          "creditLimit": 24000,
           "installments": [
             {
               "id": "gz-inst-1",
               "name": "消费分期一（36期）",
+              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金5,553.91+利息360.40，月供275.80（本金241.48+利息34.32）",
+              "endDate": "2028-11-02",
+              "startDate": "2025-09-02",
               "paidPeriods": 10,
+              "totalMonths": 36,
+              "monthlyPayment": 275.8,
               "originalAmount": 8693.08,
               "remainingAmount": 5914.31,
-              "remainingPrincipal": 5553.91,
-              "remainingInterest": 360.40,
-              "monthlyPayment": 275.8,
-              "totalMonths": 36,
-              "principalPerMonth": 241.48,
-              "interestPerMonth": 34.32,
               "remainingMonths": 23,
-              "startDate": "2025-09-02",
-              "endDate": "2028-11-02",
-              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金5,553.91+利息360.40，月供275.80（本金241.48+利息34.32）"
+              "interestPerMonth": 34.32,
+              "principalPerMonth": 241.48,
+              "remainingInterest": 360.4,
+              "remainingPrincipal": 5553.91
             },
             {
               "id": "gz-inst-2",
               "name": "消费分期二（36期）",
-              "paidPeriods": 10,
-              "originalAmount": 196.0,
-              "remainingAmount": 133.38,
-              "remainingPrincipal": 125.22,
-              "remainingInterest": 8.16,
-              "monthlyPayment": 6.22,
-              "totalMonths": 36,
-              "principalPerMonth": 5.45,
-              "interestPerMonth": 0.77,
-              "remainingMonths": 23,
-              "startDate": "2025-09-02",
+              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金125.22+利息8.16，月供6.22（本金5.45+利息0.77）",
               "endDate": "2028-11-02",
-              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金125.22+利息8.16，月供6.22（本金5.45+利息0.77）"
+              "startDate": "2025-09-02",
+              "paidPeriods": 10,
+              "totalMonths": 36,
+              "monthlyPayment": 6.22,
+              "originalAmount": 196,
+              "remainingAmount": 133.38,
+              "remainingMonths": 23,
+              "interestPerMonth": 0.77,
+              "principalPerMonth": 5.45,
+              "remainingInterest": 8.16,
+              "remainingPrincipal": 125.22
             },
             {
               "id": "gz-inst-3",
               "name": "账单分期三（36期）",
+              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金8,394.60+利息544.69，月供416.86（本金364.98+利息51.88）",
+              "endDate": "2028-11-02",
+              "startDate": "2025-09-02",
               "paidPeriods": 10,
+              "totalMonths": 36,
+              "monthlyPayment": 416.86,
               "originalAmount": 13139.34,
               "remainingAmount": 8939.29,
-              "remainingPrincipal": 8394.60,
-              "remainingInterest": 544.69,
-              "monthlyPayment": 416.86,
-              "totalMonths": 36,
-              "principalPerMonth": 364.98,
-              "interestPerMonth": 51.88,
               "remainingMonths": 23,
-              "startDate": "2025-09-02",
-              "endDate": "2028-11-02",
-              "note": "第10期已还(2026-06-02)，当期第11期(2026-07-02)在账单中，remainingAmount为第12-34期(23期)。剩余本金8,394.60+利息544.69，月供416.86（本金364.98+利息51.88）"
+              "interestPerMonth": 51.88,
+              "principalPerMonth": 364.98,
+              "remainingInterest": 544.69,
+              "remainingPrincipal": 8394.6
             }
-          ]
+          ],
+          "interestRate": 0.0005,
+          "currentBillEnd": "2026-06-13",
+          "currentDueDate": "2026-07-02",
+          "currentBillStart": "2026-05-14",
+          "currentBillAmount": 702.2
         }
-      ]
+      ],
+      "shortName": "广州"
     },
     {
       "id": "spdb",
-      "name": "浦发银行",
-      "shortName": "浦发",
-      "color": "#0066CC",
       "icon": "🏢",
+      "name": "浦发银行",
+      "color": "#0066CC",
       "accounts": [
         {
           "id": "spdb-credit-1",
-          "type": "credit",
           "name": "浦发信用卡",
-          "totalDebt": 27586.67,
-          "creditLimit": 28000,
-          "billDay": 28,
-          "dueDay": 17,
-          "minPayment": 0,
-          "currentBillStart": "2026-05-29",
-          "currentBillEnd": "2026-06-28",
-          "currentDueDate": "2026-07-17",
-          "currentBillAmount": 0,
-          "paidAmount": 0,
-          "interestRate": 0.0005,
           "note": "6月20日办理全账分期，本月无账单。全账分期22,750.33元(12期)+现金分期剩5期+商户分期剩2期。7月起月供=全账2,001.03+现金659.66+商户138.05=2,798.74元",
+          "type": "credit",
+          "dueDay": 17,
+          "billDay": 28,
+          "totalDebt": 27586.67,
+          "minPayment": 0,
+          "paidAmount": 0,
+          "creditLimit": 28000,
           "installments": [
             {
               "id": "spdb-inst-full",
               "name": "全账分期（12期，年化10.09%，6.3折优惠）",
+              "note": "已出账15,656.33+未出账7,094.00=22,750.33元，等额月还2,001.03，财政贴息年化1%，6.3折优惠减免758.87元，实付利息1,262.01元。申请日2026-06-20",
+              "endDate": "2027-06-17",
+              "startDate": "2026-07-17",
+              "totalMonths": 12,
+              "monthlyPayment": 2001.03,
               "originalAmount": 24012.34,
               "remainingAmount": 24012.34,
-              "remainingPrincipal": 22750.33,
-              "remainingInterest": 1262.01,
-              "monthlyPayment": 2001.03,
               "remainingMonths": 12,
-              "startDate": "2026-07-17",
-              "endDate": "2027-06-17",
-              "note": "已出账15,656.33+未出账7,094.00=22,750.33元，等额月还2,001.03，财政贴息年化1%，6.3折优惠减免758.87元，实付利息1,262.01元。申请日2026-06-20",
-              "totalMonths": 12,
+              "interestPerMonth": 105.17,
               "principalPerMonth": 1895.86,
-              "interestPerMonth": 105.17
+              "remainingInterest": 1262.01,
+              "remainingPrincipal": 22750.33
             },
             {
               "id": "spdb-inst-cash",
               "name": "现金分期（万用金，剩余5期）",
+              "note": "24期，年化12.10%，剩余本金3,200.77+利息97.43",
+              "endDate": "2026-11-01",
+              "startDate": "2024-12-01",
+              "totalMonths": 24,
+              "monthlyPayment": 659.66,
               "originalAmount": 14000,
               "remainingAmount": 3298.2,
-              "remainingPrincipal": 3200.77,
-              "remainingInterest": 97.43,
-              "monthlyPayment": 659.66,
               "remainingMonths": 5,
-              "startDate": "2024-12-01",
-              "endDate": "2026-11-01",
-              "note": "24期，年化12.10%，剩余本金3,200.77+利息97.43",
-              "totalMonths": 24,
+              "interestPerMonth": 76.33,
               "principalPerMonth": 583.33,
-              "interestPerMonth": 76.33
+              "remainingInterest": 97.43,
+              "remainingPrincipal": 3200.77
             },
             {
               "id": "spdb-inst-merchant",
               "name": "商户分期（3笔，剩余2期）",
+              "note": "3笔商户分期(2026-05-18申请,3期免息,28号出账): ①泉州沛尧47.84/期 ②46.88/期 ③杭州半移43.33/期。第1期5/28出账已还,剩余2期(6/28出账7/17还、7/28出账8/17还)",
+              "endDate": "2026-07-28",
+              "startDate": "2026-05-28",
+              "paidPeriods": 1,
+              "totalMonths": 3,
+              "monthlyPayment": 138.05,
               "originalAmount": 414.15,
               "remainingAmount": 276.12,
-              "remainingPrincipal": 276.12,
-              "remainingInterest": 0,
-              "monthlyPayment": 138.05,
-              "paidPeriods": 1,
               "remainingMonths": 2,
-              "startDate": "2026-05-28",
-              "endDate": "2026-07-28",
-              "note": "3笔商户分期(2026-05-18申请,3期免息,28号出账): ①泉州沛尧47.84/期 ②46.88/期 ③杭州半移43.33/期。第1期5/28出账已还,剩余2期(6/28出账7/17还、7/28出账8/17还)",
-              "totalMonths": 3,
+              "interestPerMonth": 0,
               "principalPerMonth": 138.05,
-              "interestPerMonth": 0
+              "remainingInterest": 0,
+              "remainingPrincipal": 276.12
             }
-          ]
+          ],
+          "interestRate": 0.0005,
+          "currentBillEnd": "2026-06-28",
+          "currentDueDate": "2026-07-17",
+          "currentBillStart": "2026-05-29",
+          "currentBillAmount": 0
         }
-      ]
+      ],
+      "shortName": "浦发"
     },
     {
       "id": "abc",
-      "name": "农业银行",
-      "shortName": "农行",
-      "color": "#008000",
       "icon": "🌾",
+      "name": "农业银行",
+      "color": "#008000",
       "accounts": [
         {
           "id": "abc-credit-1",
-          "type": "credit",
           "name": "农业银行信用卡",
-          "totalDebt": 15232.49,
-          "creditLimit": 16000,
-          "billDay": 17,
-          "dueDay": 6,
-          "minPayment": 2941.68,
-          "currentBillAmount": 2941.68,
-          "paidAmount": 0,
-          "currentBillStart": "2026-05-18",
-          "currentBillEnd": "2026-06-17",
-          "currentDueDate": "2026-07-06",
-          "interestRate": 0.0048,
           "note": "6月账单2,941.68元（账单日6月17日），还款日2026-07-06，含三笔分期当期",
+          "type": "credit",
+          "dueDay": 6,
+          "billDay": 17,
+          "totalDebt": 15232.49,
+          "minPayment": 2941.68,
+          "paidAmount": 0,
+          "creditLimit": 16000,
           "installments": [
             {
               "id": "abc-inst-1",
               "name": "消费分期一（24期，月利率0.48%）",
+              "note": "账号2272****3180，每期本金302+利息34.81，结清日2027-06-06。6月账单含第13期，未出账第14-24期共11期",
+              "endDate": "2027-06-06",
+              "startDate": "2025-07-06",
+              "totalMonths": 24,
+              "monthlyPayment": 336.81,
               "originalAmount": 7252.97,
               "remainingAmount": 3704.91,
-              "remainingPrincipal": 3326.97,
-              "remainingInterest": 383.01,
-              "monthlyPayment": 336.81,
               "remainingMonths": 12,
-              "startDate": "2025-07-06",
-              "endDate": "2027-06-06",
-              "note": "账号2272****3180，申请日2025-06-06，每期本金302+利息34.81。6月17日出账第13期，还款日7月6日。未出账第14-24期共11期。remainingMonths含当期(12)，remainingAmount不含当期(11期)",
-              "totalMonths": 24,
-              "principalPerMonth": 302.0,
-              "interestPerMonth": 34.81
+              "interestPerMonth": 34.81,
+              "principalPerMonth": 302,
+              "remainingInterest": 383.01,
+              "remainingPrincipal": 3326.97
             },
             {
               "id": "abc-inst-2",
               "name": "消费分期二（12期，月利率0.48%）",
+              "note": "账号2272****4140，每期本金822+利息47.34，结清日2026-11-04。6月账单含第8期，未出账第9-12期共4期",
+              "endDate": "2026-11-06",
+              "startDate": "2025-12-06",
+              "totalMonths": 12,
+              "monthlyPayment": 869.34,
               "originalAmount": 9863.17,
               "remainingAmount": 3477.36,
-              "remainingPrincipal": 3287.17,
-              "remainingInterest": 189.40,
-              "monthlyPayment": 869.34,
               "remainingMonths": 5,
-              "startDate": "2025-12-06",
-              "endDate": "2026-11-06",
-              "note": "账号2272****4140，申请日2025-11-04，每期本金822+利息47.34。6月17日出账第8期，还款日7月6日。未出账第9-12期共4期。remainingMonths含当期(5)，remainingAmount不含当期(4期)",
-              "totalMonths": 12,
-              "principalPerMonth": 822.0,
-              "interestPerMonth": 47.34
+              "interestPerMonth": 47.34,
+              "principalPerMonth": 822,
+              "remainingInterest": 189.4,
+              "remainingPrincipal": 3287.17
             },
             {
               "id": "abc-inst-3",
               "name": "消费分期三（12期，月利率0.48%）",
+              "note": "账号2272****5519，每期本金596+利息约31.12，结清日2027-06-05。6月账单含第1期，未出账第2-12期共11期",
+              "endDate": "2027-06-06",
+              "startDate": "2026-07-06",
+              "totalMonths": 12,
+              "monthlyPayment": 627.12,
               "originalAmount": 7155.71,
               "remainingAmount": 6898.32,
-              "remainingPrincipal": 6559.71,
-              "remainingInterest": 377.82,
-              "monthlyPayment": 627.12,
               "remainingMonths": 12,
-              "startDate": "2026-07-06",
-              "endDate": "2027-06-06",
-              "note": "账号2272****5519，申请日2026-06-05，每期本金596+利息约31.12。6月17日出账第1期，还款日7月6日。未出账第2-12期共11期。remainingMonths含当期(12)，remainingAmount不含当期(11期)",
-              "totalMonths": 12,
-              "principalPerMonth": 596.0,
-              "interestPerMonth": 31.12
+              "interestPerMonth": 31.12,
+              "principalPerMonth": 596,
+              "remainingInterest": 377.82,
+              "remainingPrincipal": 6559.71
             }
-          ]
+          ],
+          "interestRate": 0.0048,
+          "currentBillEnd": "2026-06-17",
+          "currentDueDate": "2026-07-06",
+          "currentBillStart": "2026-05-18",
+          "currentBillAmount": 2941.68
         }
-      ]
+      ],
+      "shortName": "农行"
     },
     {
       "id": "cmbc",
-      "name": "民生银行",
-      "shortName": "民生",
-      "color": "#9B1B30",
       "icon": "💳",
+      "name": "民生银行",
+      "color": "#9B1B30",
       "accounts": [
         {
           "id": "cmbc-credit-1",
-          "type": "credit",
           "name": "民生银行信用卡",
-          "totalDebt": 17554.35,
-          "creditLimit": 56000,
-          "billDay": 19,
-          "dueDay": 9,
-          "minPayment": 3510.86,
-          "currentBillAmount": 3510.86,
-          "paidAmount": 0,
-          "currentBillStart": "2026-05-20",
-          "currentBillEnd": "2026-06-19",
-          "currentDueDate": "2026-07-09",
-          "interestRate": 0.0045,
           "note": "6月账单3,510.86元（账单日6月19日），还款日2026-07-09，临时额度56,000元（2026-07-18到期），永久额度40,000元",
+          "type": "credit",
+          "dueDay": 9,
+          "billDay": 19,
+          "totalDebt": 17554.35,
+          "minPayment": 3510.86,
+          "paidAmount": 0,
+          "creditLimit": 56000,
           "installments": [
             {
               "id": "cmbc-inst-1",
               "name": "账单分期（总账分期，剩余4期）",
+              "note": "12期，总利息2,158.48元，月利率约0.45%。第8期(当期)已出账在currentBillAmount中，剩余4期未出账。✅ 最快结清",
+              "endDate": "2026-11-09",
+              "startDate": "2025-12-09",
+              "paidPeriods": 7,
+              "totalMonths": 12,
+              "monthlyPayment": 3510.87,
               "originalAmount": 39971.89,
               "remainingAmount": 14043.49,
-              "remainingPrincipal": 13323.97,
-              "remainingInterest": 719.52,
-              "monthlyPayment": 3510.87,
-              "paidPeriods": 7,
               "remainingMonths": 4,
-              "startDate": "2025-12-09",
-              "endDate": "2026-11-09",
-              "note": "12期，总利息2,158.48元，月利率约0.45%。第8期(当期)已出账在currentBillAmount中，剩余4期未出账。✅ 最快结清",
-              "totalMonths": 12,
+              "interestPerMonth": 179.88,
               "principalPerMonth": 3330.99,
-              "interestPerMonth": 179.88
+              "remainingInterest": 719.52,
+              "remainingPrincipal": 13323.97
             }
-          ]
+          ],
+          "interestRate": 0.0045,
+          "currentBillEnd": "2026-06-19",
+          "currentDueDate": "2026-07-09",
+          "currentBillStart": "2026-05-20",
+          "currentBillAmount": 3510.86
         }
-      ]
+      ],
+      "shortName": "民生"
     },
     {
       "id": "alipay",
-      "name": "支付宝",
-      "shortName": "支付宝",
-      "color": "#1677FF",
       "icon": "💙",
+      "name": "支付宝",
+      "color": "#1677FF",
       "accounts": [
         {
           "id": "alipay-huabei-1",
-          "type": "credit",
           "name": "花呗",
-          "totalDebt": 0,
-          "creditLimit": 10000,
-          "billDay": 1,
-          "dueDay": 8,
-          "dueDayNextMonth": false,
-          "minPayment": 0,
-          "interestRate": 0.0005,
           "note": "当前：1日出账，8日还款。可选15/20/25日还款（对应5/10/15日出账）。建议调整为20日还款（10日出账），与其他还款日错开最均匀。暂未使用，余额0。",
-          "installments": []
+          "type": "credit",
+          "dueDay": 8,
+          "billDay": 1,
+          "totalDebt": 0,
+          "minPayment": 0,
+          "creditLimit": 10000,
+          "installments": [],
+          "interestRate": 0.0005,
+          "dueDayNextMonth": false
         },
         {
           "id": "alipay-savings-1",
-          "type": "savings",
           "name": "支付宝余额/余额宝",
+          "note": "支付宝钱包余额，手动更新",
+          "type": "savings",
           "balance": 0,
-          "note": "支付宝钱包余额，手动更新"
+          "totalDebt": 0,
+          "monthlyPayment": 0,
+          "remainingMonths": 0
         }
-      ]
+      ],
+      "shortName": "支付宝"
     },
     {
       "id": "meituan",
-      "name": "美团",
-      "shortName": "美团",
-      "color": "#FFD100",
       "icon": "🛵",
+      "name": "美团",
+      "color": "#FFD100",
       "accounts": [
         {
           "id": "meituan-yuepay-1",
-          "type": "credit",
           "name": "美团月付",
-          "totalDebt": 76.69,
-          "creditLimit": 5000,
-          "currentBillAmount": 76.69,
-          "paidAmount": 0,
-          "billDay": 25,
+          "note": "7月账单76.69元（入账周期05-25至07-14），7月22日还款。4笔外卖消费。可用额度4923.31",
+          "type": "credit",
           "dueDay": 3,
-          "dueDayNextMonth": true,
+          "billDay": 25,
+          "totalDebt": 76.69,
           "minPayment": 0,
-          "currentBillStart": "2026-05-25",
+          "paidAmount": 0,
+          "creditLimit": 5000,
+          "installments": [],
+          "interestRate": 0,
           "currentBillEnd": "2026-07-14",
           "currentDueDate": "2026-07-22",
-          "interestRate": 0,
-          "note": "7月账单76.69元（入账周期05-25至07-14），7月22日还款。4笔外卖消费。可用额度4923.31",
-          "installments": []
+          "dueDayNextMonth": true,
+          "currentBillStart": "2026-05-25",
+          "currentBillAmount": 76.69
         }
-      ]
+      ],
+      "shortName": "美团"
     }
   ],
   "expenses": [
     {
       "id": "a777fdc5-78db-40fa-b398-9821c0cbcbe1",
       "date": "2026-05-07",
-      "amount": 3.0,
-      "category": "医疗健康",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县第二人民医院",
+      "amount": 3,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县第二人民医院"
+      "payment": "招商信用卡",
+      "category": "医疗健康"
     },
     {
       "id": "c6bdeb97-c14a-4864-bd64-b5d07a74b1a3",
       "date": "2026-05-07",
-      "amount": 39.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-芙蓉冒菜麻辣烫",
+      "amount": 39,
       "cardId": "cmb-credit-1",
-      "note": "财付通-芙蓉冒菜麻辣烫"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "75e96498-7576-4bb5-84fe-26b750eb01c4",
       "date": "2026-05-07",
-      "amount": 3.0,
-      "category": "医疗健康",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县第二人民医院",
+      "amount": 3,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县第二人民医院"
+      "payment": "招商信用卡",
+      "category": "医疗健康"
     },
     {
       "id": "6d0057ea-fedf-45a5-966f-48dd92c28f1c",
       "date": "2026-05-08",
+      "note": "支付宝-上海拉扎斯信息科技有限公司",
       "amount": 15.4,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-上海拉扎斯信息科技有限公司"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "39fec2ed-f4a6-4daa-851c-cc8dd31df08c",
       "date": "2026-05-09",
+      "note": "美团-美团巴中酱板鸭（西华街店）",
       "amount": 21.7,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团巴中酱板鸭（西华街店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "9865fb6c-afda-43e8-b5cd-f95ab09c2566",
       "date": "2026-05-09",
+      "note": "美团-美团茶百道（巴中蓝湾国际店）",
       "amount": 6.9,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团茶百道（巴中蓝湾国际店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "806c1ebb-c7d8-459f-9e99-c74a7e3aa9d1",
       "date": "2026-05-09",
+      "note": "美团-美团App老上海馄饨店",
       "amount": 17.9,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团App老上海馄饨店"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "37971c1c-6b93-4ac9-b24c-42a508661d70",
       "date": "2026-05-10",
+      "note": "美团-美团南京灌汤包（煎饺生煎包馄饨）",
       "amount": 24.88,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团南京灌汤包（煎饺生煎包馄饨）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "ce0ea6af-28d7-435a-a1f5-34e5530452b6",
       "date": "2026-05-10",
+      "note": "美团-美团巴中酱板鸭（西华街店）",
       "amount": 24.3,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团巴中酱板鸭（西华街店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "5c7c7c90-0293-4da3-9742-d44e6ddb1a47",
       "date": "2026-05-10",
-      "amount": 5.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-东升副食店",
+      "amount": 5,
       "cardId": "cmb-credit-1",
-      "note": "财付通-东升副食店"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "5dd9e2dc-eafe-4593-ab95-0e32db06c2f5",
       "date": "2026-05-11",
-      "amount": 6.0,
-      "category": "娱乐休闲",
-      "payment": "招商信用卡",
+      "note": "财付通-杭州网易雷火科技有限公司",
+      "amount": 6,
       "cardId": "cmb-credit-1",
-      "note": "财付通-杭州网易雷火科技有限公司"
+      "payment": "招商信用卡",
+      "category": "娱乐休闲"
     },
     {
       "id": "41c13fe8-3e5a-4998-b29a-f2a0686fe36c",
       "date": "2026-05-11",
+      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）",
       "amount": 16.8,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "420fc167-7de3-4dc3-955c-46c69105fcab",
       "date": "2026-05-12",
+      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）",
       "amount": 17.8,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团猪元掌隆江猪脚饭（巴中店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "b3610f81-ea72-4bf0-b51a-d029e96b1709",
       "date": "2026-05-12",
-      "amount": 319.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "里白百货",
+      "amount": 319,
       "cardId": "cmb-credit-1",
-      "note": "里白百货"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "54e63b28-ea0c-4da5-b5b1-3c90f84b5859",
       "date": "2026-05-13",
+      "note": "美团-美团北京三快在线科技有限公司",
       "amount": 24.9,
-      "category": "日用百货",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团北京三快在线科技有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "acb2b4d0-448c-4ab4-9c6a-c8dff353e447",
       "date": "2026-05-13",
+      "note": "美团-美团潮汕汤粉",
       "amount": 18.3,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团潮汕汤粉"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "7cfbaa9b-07e9-44a5-83a4-b9f6af0cdfa2",
       "date": "2026-05-14",
-      "amount": -170.0,
-      "category": "转账还款",
-      "payment": "招商信用卡",
+      "note": "美团-美团北京酷讯科技有限公司[退款]",
+      "amount": -170,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团北京酷讯科技有限公司[退款]"
+      "payment": "招商信用卡",
+      "category": "转账还款"
     },
     {
       "id": "732e3805-343f-4bb4-b9e7-b7294ca7529f",
       "date": "2026-05-14",
+      "note": "美团-美团潮汕汤粉",
       "amount": 26.3,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团潮汕汤粉"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "6f6505ef-30b7-474e-8220-6f313018c91f",
       "date": "2026-05-14",
-      "amount": 170.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "美团-美团北京酷讯科技有限公司",
+      "amount": 170,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团北京酷讯科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "c298e1e8-13c2-4337-bad0-3c4c6c90e371",
       "date": "2026-05-14",
-      "amount": 52.0,
-      "category": "娱乐休闲",
-      "payment": "招商信用卡",
+      "note": "美团-美团汉海信息技术（上海）有限公司",
+      "amount": 52,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团汉海信息技术（上海）有限公司"
+      "payment": "招商信用卡",
+      "category": "娱乐休闲"
     },
     {
       "id": "9685bcab-6735-44de-b7a0-c1bbe62183ae",
       "date": "2026-05-14",
-      "amount": 43.0,
-      "category": "娱乐休闲",
-      "payment": "招商信用卡",
+      "note": "美团-美团汉海信息技术（上海）有限公司",
+      "amount": 43,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团汉海信息技术（上海）有限公司"
+      "payment": "招商信用卡",
+      "category": "娱乐休闲"
     },
     {
       "id": "1b8ae262-cd34-4f12-98de-9672b6ea3c33",
       "date": "2026-05-15",
+      "note": "美团-美团潮汕汤粉",
       "amount": 21.4,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团潮汕汤粉"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "9dd73032-8d36-4848-8f60-a4e56377cf34",
       "date": "2026-05-15",
+      "note": "美团-美团炭火匠人·烧烤（平昌店）",
       "amount": 143.14,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团炭火匠人·烧烤（平昌店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "667baefe-7788-40ce-a2f7-02f9927dcbab",
       "date": "2026-05-18",
+      "note": "财付通-开迈斯新能源科技有限公司",
       "amount": 29.5,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-开迈斯新能源科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "328f1466-8a76-45aa-ab03-0317e05d5cc2",
       "date": "2026-05-18",
+      "note": "财付通-邻你超市有限公司",
       "amount": 7.9,
-      "category": "日用百货",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-邻你超市有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "f8fbaf4c-3ca7-47a9-b30f-e77b2602534c",
       "date": "2026-05-18",
+      "note": "财付通-CAMS",
       "amount": 25.17,
-      "category": "其他",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-CAMS"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "1a76e38f-c412-4036-95fb-2c698d3354df",
       "date": "2026-05-18",
-      "amount": 16.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-邻你超市有限公司",
+      "amount": 16,
       "cardId": "cmb-credit-1",
-      "note": "财付通-邻你超市有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "37604192-fac7-400d-8d46-773adc9222f3",
       "date": "2026-05-19",
+      "note": "里白百货",
       "amount": 12831.11,
-      "category": "日用百货",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "里白百货"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "72b35d5e-14bc-4907-978a-9a3c9b6532fe",
       "date": "2026-05-19",
-      "amount": 25.0,
-      "category": "购物数码",
-      "payment": "招商信用卡",
+      "note": "财付通-Apple",
+      "amount": 25,
       "cardId": "cmb-credit-1",
-      "note": "财付通-Apple"
+      "payment": "招商信用卡",
+      "category": "购物数码"
     },
     {
       "id": "83d6794f-1cf2-41a8-be2c-f1b757ce3055",
       "date": "2026-05-19",
-      "amount": 59.0,
-      "category": "购物数码",
-      "payment": "招商信用卡",
+      "note": "财付通-Apple",
+      "amount": 59,
       "cardId": "cmb-credit-1",
-      "note": "财付通-Apple"
+      "payment": "招商信用卡",
+      "category": "购物数码"
     },
     {
       "id": "a51c4c64-bff8-452e-b1d1-a8a9b45e1f77",
       "date": "2026-05-20",
+      "note": "支付宝-无锡汐彩服饰有限公司",
       "amount": 155.78,
-      "category": "日用百货",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-无锡汐彩服饰有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "ece2f54c-3cc2-44a2-9e29-34ac394815db",
       "date": "2026-05-22",
+      "note": "支付宝-广州市禧媛服装有限公司",
       "amount": 94.9,
-      "category": "日用百货",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-广州市禧媛服装有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "0fb12398-a30b-48a1-9952-908fcc734839",
       "date": "2026-05-26",
-      "amount": 7.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-临我LINWO",
+      "amount": 7,
       "cardId": "cmb-credit-1",
-      "note": "财付通-临我LINWO"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "e346d0cf-7214-4e5a-acf1-2614ae1aa6b0",
       "date": "2026-05-27",
-      "amount": 49.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-停车场烧烤",
+      "amount": 49,
       "cardId": "cmb-credit-1",
-      "note": "财付通-停车场烧烤"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "aa19987f-2f92-44b4-a2f8-9e63c199a84c",
       "date": "2026-05-27",
-      "amount": 153.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-停车场烧烤",
+      "amount": 153,
       "cardId": "cmb-credit-1",
-      "note": "财付通-停车场烧烤"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "87f577f0-b24a-4843-aa5e-7bdf4d1495e1",
       "date": "2026-05-28",
-      "amount": -146.0,
-      "category": "转账还款",
-      "payment": "招商信用卡",
+      "note": "美团-美团北京酷讯科技有限公司[退款]",
+      "amount": -146,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团北京酷讯科技有限公司[退款]"
+      "payment": "招商信用卡",
+      "category": "转账还款"
     },
     {
       "id": "f0d7b301-6f37-4abb-bc7d-518d77780c53",
       "date": "2026-05-28",
+      "note": "支付宝-上海赫程国际旅行社有限公司[退款]",
       "amount": -161.68,
-      "category": "转账还款",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-上海赫程国际旅行社有限公司[退款]"
+      "payment": "招商信用卡",
+      "category": "转账还款"
     },
     {
       "id": "96fba9b4-de6d-4ee0-abbb-5167e3efd52a",
       "date": "2026-05-28",
-      "amount": 146.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "美团-美团北京酷讯科技有限公司",
+      "amount": 146,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团北京酷讯科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "68c233bd-d50c-493e-bc00-8f9431a2fbac",
       "date": "2026-05-28",
+      "note": "支付宝-上海赫程国际旅行社有限公司",
       "amount": 161.68,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-上海赫程国际旅行社有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "eebce7ae-b878-40b8-99b8-2b8e54ede144",
       "date": "2026-05-29",
+      "note": "支付宝-广州市禧媛服装有限公司[退款]",
       "amount": -94.9,
-      "category": "转账还款",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-广州市禧媛服装有限公司[退款]"
+      "payment": "招商信用卡",
+      "category": "转账还款"
     },
     {
       "id": "96e3bca0-55db-4206-bdda-e6bf5c29358b",
       "date": "2026-05-29",
-      "amount": 3.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "美团-南京领行科技股份有限公司",
+      "amount": 3,
       "cardId": "cmb-credit-1",
-      "note": "美团-南京领行科技股份有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "823eeff8-8778-4111-b64f-90b079576c12",
       "date": "2026-05-29",
+      "note": "支付宝-支付宝支付科技有限公司",
       "amount": 20.79,
-      "category": "其他",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-支付宝支付科技有限公司"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "918abe6c-1727-4d4e-a8d9-fb8880765544",
       "date": "2026-05-29",
+      "note": "美团-美团叶美丽的老公是厨师（青羊店）",
       "amount": 60.5,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团-美团叶美丽的老公是厨师（青羊店）"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "88255c24-7b8d-45b2-ab6d-87cfd9f509c5",
       "date": "2026-05-29",
-      "amount": 20.0,
-      "category": "其他",
-      "payment": "招商信用卡",
+      "note": "财付通-饶航",
+      "amount": 20,
       "cardId": "cmb-credit-1",
-      "note": "财付通-饶航"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "9fed1bb6-331a-4077-8c39-1fcbefe0805f",
       "date": "2026-05-30",
+      "note": "支付宝-成都地铁运营有限公司",
       "amount": 1.8,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-成都地铁运营有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "8a5b3700-ec3a-43f9-a3fb-29eddffef748",
       "date": "2026-05-30",
+      "note": "支付宝-成都地铁运营有限公司",
       "amount": 1.8,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-成都地铁运营有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "02945210-77d6-456d-bf50-1169540583e1",
       "date": "2026-05-30",
-      "amount": 192.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-青羊区茶马古道小吃店",
+      "amount": 192,
       "cardId": "cmb-credit-1",
-      "note": "财付通-青羊区茶马古道小吃店"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "e5573fc8-7f2c-457e-ac58-a24c68516a67",
       "date": "2026-05-30",
-      "amount": 25.0,
-      "category": "医疗健康",
-      "payment": "招商信用卡",
+      "note": "美团-美团App惠民百姓大药房（一环路店）",
+      "amount": 25,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团App惠民百姓大药房（一环路店）"
+      "payment": "招商信用卡",
+      "category": "医疗健康"
     },
     {
       "id": "89eb5de5-aead-490d-b9bf-bf1b1467d2d2",
       "date": "2026-05-31",
+      "note": "财付通-饶航[退款]",
       "amount": -6.6,
-      "category": "转账还款",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-饶航[退款]"
+      "payment": "招商信用卡",
+      "category": "转账还款"
     },
     {
       "id": "fa2c9a21-a118-4c9c-a987-9108fdc70ecd",
       "date": "2026-05-31",
-      "amount": 7.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "财付通-一码通行",
+      "amount": 7,
       "cardId": "cmb-credit-1",
-      "note": "财付通-一码通行"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "d7f9c612-1a2f-41ec-b815-ca62d85e64be",
       "date": "2026-05-31",
-      "amount": 20.0,
-      "category": "其他",
-      "payment": "招商信用卡",
+      "note": "财付通-饶航",
+      "amount": 20,
       "cardId": "cmb-credit-1",
-      "note": "财付通-饶航"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "ab7d3f07-33ec-4f7d-9457-8e5f441118e6",
       "date": "2026-05-31",
-      "amount": 5.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-巴州区张晓红早餐摊",
+      "amount": 5,
       "cardId": "cmb-credit-1",
-      "note": "财付通-巴州区张晓红早餐摊"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "bf20d2a7-bcf3-4874-8574-39face4ea73d",
       "date": "2026-05-31",
-      "amount": 4.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "支付宝-成都天府通数字科技有限公司",
+      "amount": 4,
       "cardId": "cmb-credit-1",
-      "note": "支付宝-成都天府通数字科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "115de482-61cf-4294-8d57-a523a2e9746d",
       "date": "2026-06-01",
-      "amount": 20.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "财付通-一码通行",
+      "amount": 20,
       "cardId": "cmb-credit-1",
-      "note": "财付通-一码通行"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "b448e9d5-7e44-4394-a0e2-1ddfc23f110b",
       "date": "2026-06-01",
-      "amount": 50.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "支付宝-广东移动",
+      "amount": 50,
       "cardId": "cmb-credit-1",
-      "note": "支付宝-广东移动"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "3ee01bc9-2fb6-4b7b-a7ca-787aeea8e523",
       "date": "2026-06-01",
+      "note": "财付通-万帮星星充电科技有限公司",
       "amount": 8.26,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-万帮星星充电科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "9279ab4c-fd3b-402a-8826-f69879e462dc",
       "date": "2026-06-02",
-      "amount": 9.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "美团-美团App瑞幸咖啡(巴中蓝湾国际店)",
+      "amount": 9,
       "cardId": "cmb-credit-1",
-      "note": "美团-美团App瑞幸咖啡(巴中蓝湾国际店)"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "74277ac1-770f-4a1c-b14f-c9441aaa37ed",
       "date": "2026-06-03",
+      "note": "财付通-万帮星星充电科技有限公司",
       "amount": 5.8,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-万帮星星充电科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "c4d46612-546c-421e-9ca2-2df0f820180c",
       "date": "2026-06-03",
+      "note": "美团支付-美团App蜜雪冰城(名都店)",
       "amount": 9.75,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团支付-美团App蜜雪冰城(名都店)"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "bb9ea39f-d863-41ec-a9b2-4d580927c7f5",
       "date": "2026-06-04",
+      "note": "财付通-万帮星星充电科技有限公司",
       "amount": 6.72,
-      "category": "交通出行",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-万帮星星充电科技有限公司"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "7c70b37a-c9d9-4286-9add-29171e95b4af",
       "date": "2026-06-04",
-      "amount": 9.0,
-      "category": "其他",
-      "payment": "招商信用卡",
+      "note": "财付通-智慧平台",
+      "amount": 9,
       "cardId": "cmb-credit-1",
-      "note": "财付通-智慧平台"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "ff3baddd-2910-479c-811c-50c6d6f65471",
       "date": "2026-06-04",
-      "amount": 16.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-巴州区美邻商超超市",
+      "amount": 16,
       "cardId": "cmb-credit-1",
-      "note": "财付通-巴州区美邻商超超市"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "ae6a4471-7ef3-49ac-b8a0-c7153f6430ea",
       "date": "2026-06-04",
+      "note": "支付宝-特约商户",
       "amount": 22.13,
-      "category": "其他",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "支付宝-特约商户"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "63d4a856-2e87-40a3-b3d4-8fbcdc058278",
       "date": "2026-06-04",
+      "note": "美团支付-美团App团购",
       "amount": 4.5,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "美团支付-美团App团购"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "278f4ce7-9815-4436-8de7-c572d779c689",
       "date": "2026-06-05",
-      "amount": 2.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "财付通-停车平台",
+      "amount": 2,
       "cardId": "cmb-credit-1",
-      "note": "财付通-停车平台"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "6900fdc5-8733-479a-8dc0-eb6cdaf5287f",
       "date": "2026-06-05",
-      "amount": 25.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-丽景尚雅",
+      "amount": 25,
       "cardId": "cmb-credit-1",
-      "note": "财付通-丽景尚雅"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "1cf82bdc-11d1-4b05-9318-94abbbc30a04",
       "date": "2026-06-05",
-      "amount": 100.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "支付宝-中国电信股份有限公司",
+      "amount": 100,
       "cardId": "cmb-credit-1",
-      "note": "支付宝-中国电信股份有限公司"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "85d8deec-d850-46bf-bef5-8fc28c2cac6b",
       "date": "2026-06-05",
-      "amount": 34.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-小食光餐饮",
+      "amount": 34,
       "cardId": "cmb-credit-1",
-      "note": "财付通-小食光餐饮"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "5375b584-5956-4b3a-a160-876615f9ca7f",
       "date": "2026-06-05",
-      "amount": 6.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-比邻便利店",
+      "amount": 6,
       "cardId": "cmb-credit-1",
-      "note": "财付通-比邻便利店"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "4b72bc55-969c-4c19-bcb6-6e9ba884f759",
       "date": "2026-06-09",
-      "amount": 5.0,
-      "category": "交通出行",
-      "payment": "招商信用卡",
+      "note": "财付通-同城停车",
+      "amount": 5,
       "cardId": "cmb-credit-1",
-      "note": "财付通-同城停车"
+      "payment": "招商信用卡",
+      "category": "交通出行"
     },
     {
       "id": "26fc3df7-86f9-4f1b-b395-3a85aab62f74",
       "date": "2026-06-10",
-      "amount": 1.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县聚福佳生活超市",
+      "amount": 1,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县聚福佳生活超市"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "1110f692-66d8-4df5-926c-af56e3009a08",
       "date": "2026-06-10",
-      "amount": 18.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县聚福佳生活超市",
+      "amount": 18,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县聚福佳生活超市"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "5ee2b101-0bcd-4d72-8ff9-237e5390c7be",
       "date": "2026-06-10",
-      "amount": 200.0,
-      "category": "居家大件",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县宏达云眠酒店",
+      "amount": 200,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县宏达云眠酒店"
+      "payment": "招商信用卡",
+      "category": "居家大件"
     },
     {
       "id": "84aeb3f2-01cf-480d-a9e8-1b0db8a5dc19",
       "date": "2026-06-11",
+      "note": "财付通-成都满尚网络科技有限公司",
       "amount": 4.5,
-      "category": "其他",
-      "payment": "招商信用卡",
       "cardId": "cmb-credit-1",
-      "note": "财付通-成都满尚网络科技有限公司"
+      "payment": "招商信用卡",
+      "category": "其他"
     },
     {
       "id": "a74828e3-c42f-44fb-8442-f0fc9826b9b3",
       "date": "2026-06-11",
-      "amount": 20.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县聚福佳生活超市",
+      "amount": 20,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县聚福佳生活超市"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "a20e7d52-aa51-4cdb-a739-a93258585a80",
       "date": "2026-06-11",
-      "amount": 30.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "财付通-美团",
+      "amount": 30,
       "cardId": "cmb-credit-1",
-      "note": "财付通-美团"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "ab10f28a-e243-414a-b4e1-84796ff5abd3",
       "date": "2026-06-12",
-      "amount": -200.0,
-      "category": "退款",
-      "payment": "招商信用卡",
+      "note": "财付通-平昌县宏达云眠酒店[退款]",
+      "amount": -200,
       "cardId": "cmb-credit-1",
-      "note": "财付通-平昌县宏达云眠酒店[退款]"
+      "payment": "招商信用卡",
+      "category": "退款"
     },
     {
       "id": "c0f5595f-d8b0-4ef7-9967-e395495cbf65",
       "date": "2026-06-15",
-      "amount": 9.0,
-      "category": "购物数码",
-      "payment": "招商信用卡",
+      "note": "财付通-Apple",
+      "amount": 9,
       "cardId": "cmb-credit-1",
-      "note": "财付通-Apple"
+      "payment": "招商信用卡",
+      "category": "购物数码"
     },
     {
       "id": "2bed2f9b-eeae-49e8-9ab6-adbf4490f02b",
       "date": "2026-06-15",
-      "amount": 60.0,
-      "category": "日用百货",
-      "payment": "招商信用卡",
+      "note": "财付通-财富摩尔超市广场店",
+      "amount": 60,
       "cardId": "cmb-credit-1",
-      "note": "财付通-财富摩尔超市广场店"
+      "payment": "招商信用卡",
+      "category": "日用百货"
     },
     {
       "id": "cee3bec0-5c83-4e98-8d07-6919f984a061",
       "date": "2026-06-17",
-      "amount": 300.0,
-      "category": "餐饮堂食",
-      "payment": "招商信用卡",
+      "note": "云闪付扫码-巴州区精英汇商贸经营部",
+      "amount": 300,
       "cardId": "cmb-credit-1",
-      "note": "云闪付扫码-巴州区精英汇商贸经营部"
+      "payment": "招商信用卡",
+      "category": "餐饮堂食"
     },
     {
       "id": "09a08611-4859-4dc2-8acb-1458dbd8b9bd",
       "date": "2026-06-19",
-      "amount": 25.0,
-      "category": "购物数码",
-      "payment": "招商信用卡",
+      "note": "财付通-Apple[入账中]",
+      "amount": 25,
       "cardId": "cmb-credit-1",
-      "note": "财付通-Apple[入账中]"
+      "payment": "招商信用卡",
+      "category": "购物数码"
     },
     {
       "id": "a93813be-648c-4290-ad41-baa6a383780e",
       "date": "2026-06-19",
-      "amount": 59.0,
-      "category": "购物数码",
-      "payment": "招商信用卡",
+      "note": "财付通-Apple[入账中]",
+      "amount": 59,
       "cardId": "cmb-credit-1",
-      "note": "财付通-Apple[入账中]"
+      "payment": "招商信用卡",
+      "category": "购物数码"
     }
   ]
 }
