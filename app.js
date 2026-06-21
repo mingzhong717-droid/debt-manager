@@ -4127,7 +4127,7 @@ const CATEGORY_COLORS = {
   '烟酒零食': '#feca57', '交通出行': '#4dabf7', '购物数码': '#a29bfe',
   '购物服装': '#fd79a8', '日用百货': '#74b9ff', '娱乐休闲': '#cc5de8',
   '订阅会员': '#6c5ce7', '医疗健康': '#51cf66', '教育学习': '#74c0fc',
-  '居家大件': '#a9e34b', '转账还款': '#868e96', '宠物': '#f9ca24', '其他': '#636e72'
+  '居家大件': '#a9e34b', '转账还款': '#868e96', '套现': '#ffd43b', '宠物': '#f9ca24', '其他': '#636e72'
 };
 
 function renderAnalysisPage() {
@@ -4140,7 +4140,13 @@ function renderAnalysisPage() {
 function renderAnalysisTotals() {
   const el = document.getElementById('analysisTotals');
   if (!el) return;
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth));
+  const allExpenses = getExpenses().filter(e => e.date.startsWith(analysisMonth));
+  // 排除套现记录，套现不计入日常消费统计
+  const expenses = allExpenses.filter(e => !isCashOut(e));
+  const cashOutList = allExpenses.filter(e => isCashOut(e));
+  const cashOutTotal = cashOutList.reduce((s, e) => s + e.amount, 0);
+  const cashOutFee = getCashOutFee(cashOutTotal);
+
   const total = expenses.reduce((s, e) => s + (e.amount > 0 ? e.amount : 0), 0);
   const refund = expenses.reduce((s, e) => s + (e.amount < 0 ? Math.abs(e.amount) : 0), 0);
   const net = total - refund;
@@ -4161,7 +4167,13 @@ function renderAnalysisTotals() {
     <div class="analysis-total-card">
       <div class="atc-label">日均支出</div>
       <div class="atc-value" style="color:var(--info)">${fmt(daily)}</div>
-    </div>`;
+    </div>
+    ${cashOutTotal > 0 ? `
+    <div class="analysis-total-card" style="border-left:3px solid #ffd43b">
+      <div class="atc-label">💰 套现</div>
+      <div class="atc-value" style="color:#e67700">${fmt(cashOutTotal)}</div>
+      <div class="atc-sub" style="color:var(--danger)">手续费(千6) ${fmt(cashOutFee)}</div>
+    </div>` : ''}`;
 }
 
 function renderAnalysisCharts() {
@@ -4169,7 +4181,8 @@ function renderAnalysisCharts() {
     console.warn('[Chart] Chart.js 未加载，跳过分析图表渲染');
     return;
   }
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  // 排除套现记录
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
   const byCategory = {};
   expenses.forEach(e => {
     byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
@@ -4246,7 +4259,8 @@ function renderAnalysisCharts() {
 function renderAnalysisPaymentDist() {
   const el = document.getElementById('analysisPaymentDist');
   if (!el) return;
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  // 排除套现记录
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
   const byPayment = {};
   expenses.forEach(e => {
     // 如果备注中含有已知信用卡尾号，归入对应信用卡显示
@@ -4280,7 +4294,8 @@ async function runAIAnalysis() {
   btn.textContent = '⏳ 分析中...';
   resultEl.innerHTML = '<div class="ai-analysis-loading">🤖 AI 正在分析本月消费数据...</div>';
 
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0);
+  // 排除套现记录
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const byCategory = {};
   expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
