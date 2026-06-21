@@ -553,7 +553,9 @@ function calcSummary() {
         // 贷款：直接用 totalDebt（本金余额）
         const loanDebt = acc.totalDebt || 0;
         totalDebt += loanDebt;
-        monthlyDue += acc.monthlyPayment || 0;
+        if (!acc.paidThisMonth) {
+          monthlyDue += acc.monthlyPayment || 0;
+        }
 
         // 贷款本金 = totalDebt，利息 = 月供×剩余期数 - 本金
         totalPrincipal += loanDebt;
