@@ -2427,3 +2427,222 @@ align-items: center;
 #backToTopBtn:active {
   transform: scale(0.92);
 }
+
+/* ===== 新功能样式 ===== */
+
+/* 通用面板 */
+.feature-panel {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+
+.empty-tip {
+  text-align: center;
+  color: #8892b0;
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+/* 还款计划列表 */
+.repayment-plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.repayment-plan-item:last-child { border-bottom: none; }
+
+.plan-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.plan-icon { font-size: 1.4rem; }
+.plan-bank { font-weight: 600; font-size: 0.9rem; color: var(--text); }
+.plan-account { font-size: 0.75rem; color: #8892b0; margin-top: 2px; }
+
+.plan-right { text-align: right; }
+.plan-amount { font-weight: 700; font-size: 1rem; color: var(--text); }
+.plan-due { font-size: 0.75rem; color: #8892b0; margin-top: 2px; }
+
+.plan-paid { opacity: 0.5; }
+.plan-paid .plan-amount { color: #00d4aa; }
+.plan-overdue { border-left: 3px solid #ff4d6d; padding-left: 12px; }
+.plan-urgent .plan-due { color: #ff4d6d; font-weight: 600; }
+
+/* 大额到期预警 */
+.large-due-card {
+  background: linear-gradient(135deg, rgba(255,77,109,0.08), rgba(255,169,77,0.05));
+  border: 1px solid rgba(255,77,109,0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.large-due-card.critical {
+  border-color: #ff4d6d;
+  background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(255,77,109,0.05));
+}
+.large-due-card.warning {
+  border-color: #ffa94d;
+  background: linear-gradient(135deg, rgba(255,169,77,0.1), rgba(255,169,77,0.03));
+}
+.large-due-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.large-due-icon { font-size: 1.2rem; }
+.large-due-title { font-weight: 600; color: var(--text); }
+.large-due-amount {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ff4d6d;
+  margin-bottom: 8px;
+}
+.large-due-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #8892b0;
+  margin-bottom: 8px;
+}
+.large-due-countdown { color: #ff4d6d; font-weight: 600; }
+.large-due-tip {
+  font-size: 0.8rem;
+  color: #ffa94d;
+  padding: 8px 12px;
+  background: rgba(255,169,77,0.08);
+  border-radius: 8px;
+}
+
+/* 进度条 */
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #8892b0;
+  margin-bottom: 8px;
+}
+.progress-bar-wrap {
+  height: 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c63ff, #00d4aa);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+.progress-pct {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #00d4aa;
+  font-weight: 600;
+}
+
+/* 消费预算 */
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.budget-title { font-weight: 600; color: var(--text); }
+.budget-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+.budget-edit-btn:hover { opacity: 1; }
+.budget-numbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.budget-label { font-size: 0.75rem; color: #8892b0; }
+.budget-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.budget-footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #8892b0;
+  margin-top: 6px;
+}
+
+/* 收支平衡 */
+.balance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.balance-item {
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+}
+.balance-item-label { font-size: 0.75rem; color: #8892b0; margin-bottom: 4px; }
+.balance-item-value { font-size: 1.1rem; font-weight: 700; }
+.balance-item.income .balance-item-value { color: #00d4aa; }
+.balance-item.expense .balance-item-value { color: #ffa94d; }
+.balance-item.positive .balance-item-value { color: #00d4aa; }
+.balance-item.negative .balance-item-value { color: #ff4d6d; }
+
+.balance-warning {
+  padding: 12px;
+  background: rgba(255,169,77,0.08);
+  border: 1px solid rgba(255,169,77,0.3);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #ffa94d;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.balance-feasible { font-weight: 600; }
+.balance-feasible.ok { color: #00d4aa; }
+.balance-feasible.danger { color: #ff4d6d; }
+
+/* 提前还款计算器 */
+.prepay-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.prepay-form .form-group { flex: 1; min-width: 150px; }
+.prepay-form .btn-primary { align-self: flex-end; }
+
+.prepay-result-card {
+  background: rgba(108,99,255,0.05);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+.prepay-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.prepay-result-row:last-child { border-bottom: none; }
+
+.result-placeholder {
+  text-align: center;
+  color: #8892b0;
+  padding: 16px;
+  font-size: 0.85rem;
+}

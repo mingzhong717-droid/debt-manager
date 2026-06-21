@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="负债管理" />
   <link rel="apple-touch-icon" href="icon-192.png" />
 
-  <link rel="stylesheet" href="style.css?v=20260622e" />
+  <link rel="stylesheet" href="style.css?v=20260622g" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
     onerror="console.warn('[CDN] chart.js 加载失败，图表功能不可用')"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"
@@ -99,6 +99,20 @@
       </div>
     </div>
 
+    <!-- 大额到期预警 -->
+    <div id="largeDueWarning" style="display:none"></div>
+
+    <!-- 月度还款进度 -->
+    <div class="section-title">本月还款进度</div>
+    <div class="feature-panel" id="repaymentProgress"></div>
+
+    <!-- 还款计划 -->
+    <div class="section-title">还款计划</div>
+    <div class="feature-panel" id="repaymentPlanList"></div>
+
+    <!-- 日常消费预算 -->
+    <div class="feature-panel" id="budgetPanel"></div>
+
     <!-- 钱包余额面板 -->
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
       <span>钱包余额</span>
@@ -132,6 +146,22 @@
         <div class="chart-wrap">
           <canvas id="barChart"></canvas>
         </div>
+      </div>
+    </div>
+
+    <!-- 收入-支出-还款平衡 -->
+    <div class="section-title">收支平衡分析</div>
+    <div class="feature-panel" id="balanceViewPanel"></div>
+
+    <!-- 提前还款计算器 -->
+    <div class="section-title">提前还款收益计算</div>
+    <div class="feature-panel" id="prepayCalcPanel"></div>
+
+    <!-- 负债趋势图 -->
+    <div class="chart-card" style="margin-bottom:20px">
+      <div class="chart-title">负债趋势（月度）</div>
+      <div class="chart-wrap">
+        <canvas id="debtTrendChart"></canvas>
       </div>
     </div>
 
@@ -560,7 +590,8 @@
 <!-- ===== 回到顶部按钮 ===== -->
 <button id="backToTopBtn" title="回到顶部">↑</button>
 
-<script src="app.js?v=20260622f"></script>
+<script src="app.js?v=20260622g"></script>
+<script src="features.js?v=20260622g"></script>
 
 <!-- Service Worker 注册 & 自动更新 -->
 <script>
