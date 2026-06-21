@@ -2945,7 +2945,10 @@ intent=chat:
 - 用户修正上一次结果时（说"不对""改成XX"），基于上次 JSON 修改后重新返回完整 JSON
 - 只返回 JSON，不要 markdown 代码块，不要任何解释文字
 - 无法确定的字段用合理默认值，不要留 null
-- 当用户问"我的负债""应该先还哪个""下个月还多少"等分析类问题时，直接基于下方【我的负债数据快照】中的真实数据回答，不要说"我没有你的数据"`;
+- 当用户问"我的负债""应该先还哪个""下个月还多少"等分析类问题时，直接基于下方【我的负债数据快照】中的真实数据回答，不要说"我没有你的数据"
+- 当用户同时提供已出账和未出账信息时，返回 JSON 数组，第一个元素为 update_bill（更新账单金额），后续元素为 add_expense（录入未出账消费）。例如：[{"intent":"update_bill","cardName":"民生信用卡","currentBillAmount":3510.86,"paidAmount":3510.86},{"intent":"add_expense","date":"2026-06-21","amount":8411.21,"category":"日用百货","payment":"民生信用卡","note":"里白百货"}]
+- 已出账账单中的"还款"条目表示用户已还款，应计入 paidAmount（已还金额=还款总额的绝对值之和）
+- 已出账中的消费/分期摊销等构成 currentBillAmount（本期账单金额=正数条目之和）`;
 
 // 动态生成完整系统提示词（每次对话时调用，确保数据最新）
 function buildSystemPrompt() {
@@ -3188,9 +3191,31 @@ async function handleAISend() {
       aiConversation.push({ role: 'assistant', content: raw });
 
       const parsed = parseAIResult(raw);
-      streamBubble.parsed = parsed;
-      renderAIChat();
-      await handleAIIntent(parsed, streamBubble);
+      // 支持复合操作（数组）：第一个操作显示在流式气泡中，后续操作作为批量消费录入
+      if (Array.isArray(parsed)) {
+        // 第一个通常是 update_bill
+        const first = parsed[0];
+        streamBubble.parsed = first;
+        renderAIChat();
+        await handleAIIntent(first, streamBubble);
+        // 后续的 add_expense 作为批量条目
+        const expenses = parsed.slice(1).filter(p => p.intent === 'add_expense');
+        if (expenses.length > 0) {
+          aiChatBubbles.push({
+            role: 'ai', text: '', parsed: null,
+            batchSummary: `📋 同时识别到 ${expenses.length} 笔未出账消费，请逐条确认或跳过：`
+          });
+          expenses.forEach(item => {
+            aiChatBubbles.push({ role: 'ai', text: '', parsed: item, batchItem: true });
+          });
+          renderAIChat();
+          setAIStatus(`✅ 账单已更新，另有 ${expenses.length} 笔消费待确认`, 'success');
+        }
+      } else {
+        streamBubble.parsed = parsed;
+        renderAIChat();
+        await handleAIIntent(parsed, streamBubble);
+      }
       saveAIChatHistory();
     }
 
@@ -3263,7 +3288,7 @@ const messages = [
     body: JSON.stringify({
       model: MODEL_TEXT,
       messages,
-      max_new_tokens: 400,
+      max_new_tokens: 800,
       temperature: 0.1,
       stream: true,
     }),
@@ -3329,10 +3354,26 @@ function parseAIResult(raw) {
   let obj;
   try { obj = JSON.parse(cleaned); }
   catch {
-    const m = cleaned.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('无法解析 AI 返回的 JSON');
-    obj = JSON.parse(m[0]);
+    // 尝试匹配数组
+    const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrMatch) {
+      try { obj = JSON.parse(arrMatch[0]); } catch {}
+    }
+    // 尝试匹配对象
+    if (!obj) {
+      const m = cleaned.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('无法解析 AI 返回的 JSON');
+      obj = JSON.parse(m[0]);
+    }
   }
+  // 如果是数组（复合操作），逐个补全默认值后返回
+  if (Array.isArray(obj)) {
+    return obj.map(item => normalizeAIItem(item));
+  }
+  return normalizeAIItem(obj);
+}
+
+function normalizeAIItem(obj) {
   const todayStr = dayjs().format('YYYY-MM-DD');
   // 兼容旧格式（无 intent 字段时默认为 add_expense）
   if (!obj.intent) {
