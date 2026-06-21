@@ -607,10 +607,11 @@ function renderSummaryBanner() {
   document.getElementById('totalDebt').textContent = fmt(totalDebt);
   document.getElementById('monthlyDue').textContent = fmt(monthlyDue);
 
-  // 显示本金/利息拆分
+  // 显示本金/利息拆分（确保本金+利息=总负债，差额归入本金）
   const breakdownEl = document.getElementById('debtBreakdown');
   if (breakdownEl) {
-    breakdownEl.textContent = `本金 ${fmt(totalPrincipal)} / 利息 ${fmt(totalInterest)}`;
+    const adjustedPrincipal = totalDebt - totalInterest;
+    breakdownEl.textContent = `本金 ${fmt(adjustedPrincipal)} / 利息 ${fmt(totalInterest)}`;
   }
 
   // 可用余额 = 所有钱包余额之和
