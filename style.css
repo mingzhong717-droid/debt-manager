@@ -2685,3 +2685,265 @@ align-items: center;
   padding: 16px;
   font-size: 0.85rem;
 }
+
+/* ===== 还款记录日志 ===== */
+.repay-log-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.repay-log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.repay-log-item:last-child { border-bottom: none; }
+.repay-log-date { color: #8892b0; min-width: 100px; }
+.repay-log-name { flex: 1; margin: 0 8px; }
+.repay-log-amount { color: #00d4aa; font-weight: 600; }
+
+/* ===== 还款优先级 ===== */
+.priority-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.priority-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.priority-tab.active {
+  background: rgba(108,99,255,0.15);
+  border-color: #6c63ff;
+  color: #6c63ff;
+}
+.priority-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.priority-item:last-child { border-bottom: none; }
+.priority-first {
+  background: rgba(108,99,255,0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(108,99,255,0.2);
+}
+.priority-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.priority-first .priority-rank {
+  background: #6c63ff;
+  color: #fff;
+}
+.priority-name { flex: 1; }
+.priority-rate { color: #ffa94d; min-width: 60px; text-align: right; }
+.priority-balance { color: #8892b0; min-width: 80px; text-align: right; }
+.priority-tip {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(108,99,255,0.05);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #8892b0;
+  line-height: 1.5;
+}
+
+/* ===== 年度还款日历 ===== */
+.yearly-calendar {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  height: 160px;
+  padding: 12px 0;
+}
+.yearly-month {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.yearly-month-label {
+  font-size: 0.7rem;
+  color: #8892b0;
+}
+.yearly-bar-wrap {
+  flex: 1;
+  width: 100%;
+  max-width: 28px;
+  background: rgba(108,99,255,0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.yearly-bar {
+  width: 100%;
+  background: linear-gradient(to top, #6c63ff, #a78bfa);
+  border-radius: 4px;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+.yearly-high .yearly-bar {
+  background: linear-gradient(to top, #ff4d6d, #ffa94d);
+}
+.yearly-amount {
+  font-size: 0.7rem;
+  color: var(--text);
+  font-weight: 600;
+}
+.yearly-high .yearly-amount { color: #ff4d6d; }
+
+/* ===== 收入管理 ===== */
+.income-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.income-list {
+  border-top: 1px solid var(--border);
+}
+.income-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.income-item:last-child { border-bottom: none; }
+.income-amount { color: #00d4aa; font-weight: 600; }
+
+/* ===== 模块设置弹窗 ===== */
+.module-settings-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+.module-setting-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.module-setting-item:last-child { border-bottom: none; }
+.module-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.module-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6c63ff;
+}
+
+/* ===== 深色模式（仅在 html.dark-mode 时生效）===== */
+html.dark-mode {
+  --bg: #0a0e1a;
+  --bg2: #141825;
+  --bg3: #1a1f30;
+  --border: rgba(46,50,80,0.8);
+  --text: #e6e8f0;
+  --text-muted: #8892b0;
+}
+html.dark-mode body {
+  background: var(--bg);
+  color: var(--text);
+}
+html.dark-mode .topbar {
+  background: var(--bg2);
+  border-bottom-color: var(--border);
+}
+html.dark-mode .summary-banner {
+  background: var(--bg2);
+  border-color: var(--border);
+}
+html.dark-mode .feature-panel,
+html.dark-mode .chart-card,
+html.dark-mode .wallet-panel,
+html.dark-mode .billing-status-wrap,
+html.dark-mode .expense-overview-wrap {
+  background: var(--bg2);
+  border-color: var(--border);
+}
+html.dark-mode .bank-card {
+  background: var(--bg2);
+  border-color: var(--border);
+}
+html.dark-mode .modal {
+  background: var(--bg2);
+  border-color: var(--border);
+}
+html.dark-mode .nav-btn,
+html.dark-mode .bottom-nav-btn {
+  color: var(--text-muted);
+}
+html.dark-mode .section-title {
+  color: var(--text);
+}
+html.dark-mode .summary-label {
+  color: var(--text-muted);
+}
+html.dark-mode .bottom-nav {
+  background: var(--bg2);
+  border-top-color: var(--border);
+}
+html.dark-mode .calendar-wrap {
+  background: var(--bg2);
+  border-color: var(--border);
+}
+html.dark-mode input,
+html.dark-mode select,
+html.dark-mode textarea {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border);
+}
+html.dark-mode .expense-table th {
+  background: var(--bg3);
+  color: var(--text-muted);
+}
+html.dark-mode .expense-table td {
+  border-color: var(--border);
+}
+html.dark-mode .toast {
+  background: var(--bg2);
+  color: var(--text);
+  border-color: var(--border);
+}
+html.dark-mode .edit-data-btn {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border);
+}
+html.dark-mode .btn-primary {
+  background: #6c63ff;
+}
+html.dark-mode .drawer,
+html.dark-mode .calendar-drawer {
+  background: var(--bg2);
+}
