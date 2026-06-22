@@ -3915,7 +3915,7 @@ function renderAIChat(preserveScroll) {
 
   // 短内容不需要滚动条：检测实际高度，不足 420px 加 short 类
   el.querySelectorAll('.ai-md-body').forEach(body => {
-    body.classList.toggle('short', body.scrollHeight <= 420);
+    body.classList.toggle('short', body.scrollHeight <= window.innerHeight * 0.65);
   });
 
   // 滚动到底部（或恢复滚动位置）
