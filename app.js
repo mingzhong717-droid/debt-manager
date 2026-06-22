@@ -3009,7 +3009,7 @@ intent=delete_installment:
 {"intent":"delete_installment","cardName":"信用卡名(模糊匹配)","instName":"分期名称(模糊匹配)"}
 
 intent=query:
-{"intent":"query","reply":"用中文回答用户的问题，可引用数据"}
+{"intent":"query","reply":"用中文回答用户的问题，可引用数据。reply 字段支持 Markdown：用 ### 做小标题、**文字** 加粗、- 做列表项、\n 换行。回复要分段清晰，不要把所有内容挤在一行。"}
 
 intent=chat:
 {"intent":"chat","reply":"友好的中文回复"}
@@ -3906,7 +3906,9 @@ function escHtml(s) {
 // 轻量 Markdown 渲染（用于 AI query/chat 回复）
 function renderMarkdown(text) {
   if (!text) return '';
-  let html = escHtml(text);
+  // 先把字面 \n（两字符）转成真正换行符（AI 有时在 JSON reply 字段里用字面 \n）
+  let normalized = text.replace(/\\n/g, '\n');
+  let html = escHtml(normalized);
   // ### 标题
   html = html.replace(/^###\s+(.+)$/gm, '<div class="ai-md-h3">$1</div>');
   html = html.replace(/^##\s+(.+)$/gm, '<div class="ai-md-h2">$1</div>');
