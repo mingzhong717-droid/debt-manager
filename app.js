@@ -3253,8 +3253,8 @@ async function handleAISend() {
         const bubbles = el.querySelectorAll('.ai-bubble-ai');
         const last = bubbles[bubbles.length - 1];
         if (last) {
-          const span = last.querySelector('span');
-          if (span) span.textContent = partialText;
+          const body = last.querySelector('.ai-md-body');
+          if (body) body.innerHTML = renderMarkdown(partialText);
         }
         el.scrollTop = el.scrollHeight;
       });
@@ -3435,8 +3435,13 @@ function parseAIResult(raw) {
     // 尝试匹配对象
     if (!obj) {
       const m = cleaned.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('无法解析 AI 返回的 JSON');
-      obj = JSON.parse(m[0]);
+      if (m) {
+        try { obj = JSON.parse(m[0]); } catch {}
+      }
+    }
+    // 无法解析 JSON：AI 返回了纯自然语言，降级为 query 意图直接展示
+    if (!obj) {
+      return { intent: 'query', reply: raw };
     }
   }
   // 如果是数组（复合操作），逐个补全默认值后返回
@@ -3726,7 +3731,7 @@ function renderAIChat(preserveScroll) {
       }
       if (!b.parsed) {
         const streamingDots = b.streaming ? `<span class="ai-typing-dots"><span>.</span><span>.</span><span>.</span></span>` : '';
-        return `<div class="ai-bubble ai-bubble-ai"><span>${escHtml(b.text)}</span>${streamingDots}</div>`;
+        return `<div class="ai-bubble ai-bubble-ai ai-bubble-markdown"><div class="ai-md-body">${renderMarkdown(b.text)}</div>${streamingDots}</div>`;
       }
       const p = b.parsed;
       const intent = p.intent || 'add_expense';
@@ -3876,8 +3881,8 @@ function renderAIChat(preserveScroll) {
         </div>`;
 
       } else if (intent === 'query' || intent === 'chat') {
-        return `<div class="ai-bubble ai-bubble-ai">
-          <span>${escHtml(p.reply || b.text)}</span>
+        return `<div class="ai-bubble ai-bubble-ai ai-bubble-markdown">
+          <div class="ai-md-body">${renderMarkdown(p.reply || b.text)}</div>
         </div>`;
 
       } else {
@@ -3896,6 +3901,26 @@ function renderAIChat(preserveScroll) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 轻量 Markdown 渲染（用于 AI query/chat 回复）
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = escHtml(text);
+  // ### 标题
+  html = html.replace(/^###\s+(.+)$/gm, '<div class="ai-md-h3">$1</div>');
+  html = html.replace(/^##\s+(.+)$/gm, '<div class="ai-md-h2">$1</div>');
+  html = html.replace(/^#\s+(.+)$/gm, '<div class="ai-md-h1">$1</div>');
+  // **加粗**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // - 列表项
+  html = html.replace(/^[-*]\s+(.+)$/gm, '<div class="ai-md-li">$1</div>');
+  // 数字列表 1. 2. 3.
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<div class="ai-md-li">$1</div>');
+  // 换行（两个\n变段落间距，单个\n变<br>）
+  html = html.replace(/\n\n/g, '<div class="ai-md-gap"></div>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
 }
 
 // AI 识别消费后直接录入（支持 bubbleIdx 标记已确认）

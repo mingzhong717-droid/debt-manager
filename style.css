@@ -1517,12 +1517,22 @@ input:focus, select:focus, textarea:focus {
   align-items: flex-end;
 }
 .ai-bubble-ai {
-  align-self: flex-start;
-  background: #f5f6fa;
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
-  color: var(--text);
+align-self: flex-start;
+background: #f5f6fa;
+border: 1px solid var(--border);
+border-bottom-left-radius: 4px;
+color: var(--text);
 }
+/* Markdown 回复气泡 */
+.ai-bubble-markdown { line-height: 1.7; }
+.ai-md-body { width: 100%; }
+.ai-md-h1 { font-size: 1.1em; font-weight: 700; margin: 10px 0 4px; color: var(--accent); }
+.ai-md-h2 { font-size: 1.05em; font-weight: 700; margin: 8px 0 4px; color: var(--accent); }
+.ai-md-h3 { font-size: 0.97em; font-weight: 700; margin: 8px 0 3px; color: var(--text); border-left: 3px solid var(--accent); padding-left: 8px; }
+.ai-md-li { padding: 2px 0 2px 16px; position: relative; }
+.ai-md-li::before { content: '•'; position: absolute; left: 4px; color: var(--accent); }
+.ai-md-gap { height: 8px; }
+.ai-bubble-markdown strong { color: var(--warning); font-weight: 600; }
 .ai-bubble-img {
   max-width: 140px;
   max-height: 100px;
