@@ -4363,15 +4363,21 @@ async function runAIAnalysis() {
   btn.textContent = '⏳ 分析中...';
   resultEl.innerHTML = '<div class="ai-analysis-loading">🤖 AI 正在分析本月消费数据...</div>';
 
-  // 排除套现记录
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  // 排除套现记录；退款计入对应原始分类以抵消
+  const allMonthExp = getExpenses().filter(e => e.date.startsWith(analysisMonth) && !isCashOut(e));
   const byCategory = {};
-  expenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+  allMonthExp.forEach(e => {
+    const cat = resolveRefundCategory(e, allMonthExp);
+    byCategory[cat] = (byCategory[cat] || 0) + e.amount;
+  });
+  // 移除净额为0或负数的分类
+  Object.keys(byCategory).forEach(k => { if (byCategory[k] <= 0) delete byCategory[k]; });
+  const total = Object.values(byCategory).reduce((s, v) => s + v, 0);
   const topCats = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([k, v]) => `${k}: ¥${v.toFixed(2)}`).join('、');
 
-  const prompt = `用户 ${analysisMonth} 月消费数据：总支出 ¥${total.toFixed(2)}，共 ${expenses.length} 笔。
+  const expCount = allMonthExp.filter(e => e.amount > 0).length;
+  const prompt = `用户 ${analysisMonth} 月消费数据：总支出 ¥${total.toFixed(2)}，共 ${expCount} 笔。
 主要分类：${topCats || '暂无'}。
 请用 3-4 句话给出消费分析和节省建议，语气友好，重点突出。`;
 
