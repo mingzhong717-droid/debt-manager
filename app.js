@@ -67,6 +67,54 @@ function resolveCardFromNote(note, currentPayment) {
   return null;
 }
 
+// ===== 贷款自动月度扣减 =====
+function autoUpdateLoans() {
+  if (!DATA || !DATA.banks) return;
+  const today = dayjs();
+  const todayDay = today.date();
+  const thisMonth = today.format('YYYY-MM');
+  let changed = false;
+
+  DATA.banks.forEach(bank => {
+    bank.accounts.forEach(acc => {
+      if (acc.type !== 'loan') return;
+      if (!acc.dueDay || !acc.monthlyPayment || acc.remainingMonths <= 0) return;
+
+      const lastAutoMonth = acc.lastAutoMonth || '';
+
+      if (todayDay >= acc.dueDay && lastAutoMonth !== thisMonth) {
+        if (acc.id === 'cmb-loan-2') {
+          // 到期还本型：每月只还利息，本金不变，只更新剩余期数
+          acc.remainingMonths = Math.max(0, acc.remainingMonths - 1);
+        } else {
+          // 等额本息型：totalDebt 减去本月本金部分
+          const monthlyRate = acc.interestRate ? acc.interestRate / 12 : 0;
+          const interestThisMonth = monthlyRate > 0
+            ? Math.round(acc.totalDebt * monthlyRate * 100) / 100
+            : 0;
+          const principalThisMonth = Math.round((acc.monthlyPayment - interestThisMonth) * 100) / 100;
+          acc.totalDebt = Math.max(0, Math.round((acc.totalDebt - principalThisMonth) * 100) / 100);
+          acc.remainingMonths = Math.max(0, acc.remainingMonths - 1);
+        }
+        acc.paidThisMonth = true;
+        acc.lastAutoMonth = thisMonth;
+        changed = true;
+        console.log('[AutoLoan] ' + acc.name + ' 已自动扣减，剩余¥' + acc.totalDebt + '，剩余' + acc.remainingMonths + '期');
+      }
+
+      // 新月份还款日前重置 paidThisMonth
+      if (todayDay < acc.dueDay && lastAutoMonth !== thisMonth) {
+        acc.paidThisMonth = false;
+      }
+    });
+  });
+
+  if (changed) {
+    saveData();
+    console.log('[AutoLoan] 贷款数据已自动更新并保存');
+  }
+}
+
 // ===== 折叠/展开区块 =====
 function toggleSection(titleEl) {
   titleEl.classList.toggle('collapsed');
@@ -224,6 +272,7 @@ async function loadData() {
 
   if (cloudData) {
     DATA = cloudData;
+    autoUpdateLoans();
     init();
     return;
   }
