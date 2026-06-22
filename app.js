@@ -4215,6 +4215,20 @@ function renderAnalysisTotals() {
     </div>` : ''}`;
 }
 
+// 将"退款"分类的记录归入对应原始消费分类（通过备注匹配）
+function resolveRefundCategory(refundExp, allExpenses) {
+  if (refundExp.category !== '退款') return refundExp.category;
+  // 从备注中提取关键词（去掉[退款]后缀）
+  const note = (refundExp.note || '').replace(/\[退款\]$/i, '').trim();
+  if (!note) return '退款';
+  // 在同月正数消费中查找备注匹配的记录
+  const match = allExpenses.find(e =>
+    e.amount > 0 && e.category !== '退款' &&
+    e.note && e.note.trim() === note
+  );
+  return match ? match.category : '退款';
+}
+
 function renderAnalysisCharts() {
   if (typeof Chart === 'undefined') {
     console.warn('[Chart] Chart.js 未加载，跳过分析图表渲染');
@@ -4224,7 +4238,8 @@ function renderAnalysisCharts() {
   const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && !isCashOut(e));
   const byCategory = {};
   expenses.forEach(e => {
-    byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+    const cat = resolveRefundCategory(e, expenses);
+    byCategory[cat] = (byCategory[cat] || 0) + e.amount;
   });
   // 移除净额为0或负数的分类（已被退款完全抵消）
   Object.keys(byCategory).forEach(k => {
