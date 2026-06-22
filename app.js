@@ -4220,11 +4220,15 @@ function renderAnalysisCharts() {
     console.warn('[Chart] Chart.js 未加载，跳过分析图表渲染');
     return;
   }
-  // 排除套现记录
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
+  // 排除套现记录；退款（负数金额）计入对应分类以抵消支出
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && !isCashOut(e));
   const byCategory = {};
   expenses.forEach(e => {
     byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+  });
+  // 移除净额为0或负数的分类（已被退款完全抵消）
+  Object.keys(byCategory).forEach(k => {
+    if (byCategory[k] <= 0) delete byCategory[k];
   });
 
   const sorted = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
@@ -4298,14 +4302,18 @@ function renderAnalysisCharts() {
 function renderAnalysisPaymentDist() {
   const el = document.getElementById('analysisPaymentDist');
   if (!el) return;
-  // 排除套现记录
-  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && e.amount > 0 && !isCashOut(e));
+  // 排除套现记录；退款（负数金额）计入对应支付方式以抵消支出
+  const expenses = getExpenses().filter(e => e.date.startsWith(analysisMonth) && !isCashOut(e));
   const byPayment = {};
   expenses.forEach(e => {
     // 如果备注中含有已知信用卡尾号，归入对应信用卡显示
     const resolved = resolveCardFromNote(e.note, e.payment);
     const displayPayment = resolved ? resolved.payment : e.payment;
     byPayment[displayPayment] = (byPayment[displayPayment] || 0) + e.amount;
+  });
+  // 移除净额为0或负数的支付方式
+  Object.keys(byPayment).forEach(k => {
+    if (byPayment[k] <= 0) delete byPayment[k];
   });
   const sorted = Object.entries(byPayment).sort((a, b) => b[1] - a[1]);
   const total = sorted.reduce((s, [, v]) => s + v, 0);
