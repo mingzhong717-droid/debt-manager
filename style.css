@@ -120,7 +120,7 @@ body {
 .edit-data-btn-secondary:hover { opacity: 1; }
 
 /* ===== 主内容 ===== */
-.main-content { padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.main-content { padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-x: hidden; }
 
 .page { display: none; }
 .page.active { display: block; }
