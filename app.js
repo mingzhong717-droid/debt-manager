@@ -3361,9 +3361,9 @@ const messages = [
     body: JSON.stringify({
       model: MODEL_TEXT,
       messages,
-      max_new_tokens: 800,
-      temperature: 0.1,
-      stream: true,
+max_new_tokens: 3000,
+temperature: 0.1,
+stream: true,
     }),
   });
   if (!resp.ok) {
@@ -3890,6 +3890,11 @@ function renderAIChat(preserveScroll) {
       }
     }
   }).join('');
+
+  // 短内容不需要滚动条：检测实际高度，不足 420px 加 short 类
+  el.querySelectorAll('.ai-md-body').forEach(body => {
+    body.classList.toggle('short', body.scrollHeight <= 420);
+  });
 
   // 滚动到底部（或恢复滚动位置）
   if (preserveScroll && savedScrollTop !== null) {
