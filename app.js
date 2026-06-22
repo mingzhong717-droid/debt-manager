@@ -2941,13 +2941,19 @@ function buildDebtContext() {
 
   // 汇总
   const { totalDebt, monthlyDue } = calcSummary();
-  lines.push(`总负债：¥${totalDebt.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
-  lines.push(`本月应还：¥${monthlyDue.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+  const baseIncome = DATA.meta.baseIncome || 0;
+  const fmt2 = v => v.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  lines.push(`总负债：¥${fmt2(totalDebt)}`);
+  lines.push(`本月应还：¥${fmt2(monthlyDue)}`);
+  if (baseIncome > 0) {
+    lines.push(`月收入：¥${fmt2(baseIncome)}`);
+    lines.push(`月结余（收入-应还）：¥${fmt2(baseIncome - monthlyDue)}`);
+  }
 
   // 钱包
   const wallets = DATA.meta.wallets || [];
   const walletTotal = wallets.reduce((s, w) => s + (w.balance || 0), 0);
-  lines.push(`可用余额：¥${walletTotal.toLocaleString('zh-CN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}（${wallets.map(w => `${w.name}¥${w.balance}`).join('、')}）`);
+  lines.push(`可用余额：¥${fmt2(walletTotal)}（${wallets.map(w => `${w.name}¥${w.balance}`).join('、')}）`);
   lines.push('');
 
   // 各账户明细
