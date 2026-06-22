@@ -120,7 +120,7 @@ body {
 .edit-data-btn-secondary:hover { opacity: 1; }
 
 /* ===== 主内容 ===== */
-.main-content { padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-x: hidden; }
+.main-content { padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
 
 .page { display: none; }
 .page.active { display: block; }
@@ -2776,12 +2776,17 @@ align-items: center;
 }
 
 /* ===== 年度还款日历 ===== */
+#yearlyCalendarPanel {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .yearly-calendar {
   display: flex;
   gap: 6px;
   align-items: flex-end;
   height: 160px;
   padding: 12px 0;
+  min-width: 600px;
 }
 .yearly-month {
   flex: 1;
