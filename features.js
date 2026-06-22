@@ -57,12 +57,24 @@ init = function() {
 };
 
 // ===== 功能1: 月初自动重置还款状态 =====
+// 仅在跨月时重置（即上次记录的月份 < 当前月份）
+// 第一次运行时只记录当前月份，不执行重置（避免破坏现有数据）
 function autoResetMonthlyStatus() {
   if (!DATA) return;
   const lastReset = localStorage.getItem('debt_last_reset_month');
   const currentMonth = today.format('YYYY-MM');
 
-  if (lastReset === currentMonth) return; // 本月已重置过
+  if (lastReset === currentMonth) return; // 本月已处理过
+
+  // 第一次运行：只记录当前月份，不重置
+  if (!lastReset) {
+    localStorage.setItem('debt_last_reset_month', currentMonth);
+    console.log('[AutoReset] 首次运行，记录当前月份:', currentMonth);
+    return;
+  }
+
+  // 确认是跨月（lastReset < currentMonth）
+  if (lastReset >= currentMonth) return;
 
   let changed = false;
   DATA.banks.forEach(bank => {
@@ -88,11 +100,22 @@ function autoResetMonthlyStatus() {
 }
 
 // ===== 功能2: 分期自动递减 =====
+// 仅在跨月时递减。第一次运行只记录当前月份，不执行递减。
 function autoDecrementInstallments() {
   if (!DATA) return;
   const currentMonth = today.format('YYYY-MM');
   const lastDecrement = localStorage.getItem('debt_last_decrement_month');
   if (lastDecrement === currentMonth) return;
+
+  // 第一次运行：只记录，不递减
+  if (!lastDecrement) {
+    localStorage.setItem('debt_last_decrement_month', currentMonth);
+    console.log('[AutoDecrement] 首次运行，记录当前月份:', currentMonth);
+    return;
+  }
+
+  // 确认是跨月
+  if (lastDecrement >= currentMonth) return;
 
   let changed = false;
 
@@ -1131,17 +1154,34 @@ async function checkSyncConflict() {
     if (rows && rows.length > 0) {
       const cloudUpdated = rows[0].updated_at;
       if (lastKnownVersion && cloudUpdated !== lastKnownVersion) {
-        const reload = confirm('检测到其他设备更新了数据，是否重新加载最新数据？\n\n点击"确定"加载云端数据，点击"取消"保留当前数据。');
-        if (reload) {
-          await loadData();
-          showToast('✅ 已同步最新数据');
-        }
+        // 显示非阻塞的同步提示条
+        showSyncConflictBanner();
       }
       lastKnownVersion = cloudUpdated;
     }
   } catch (e) {
     // 网络错误，静默忽略
   }
+}
+
+function showSyncConflictBanner() {
+  if (document.getElementById('syncConflictBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'syncConflictBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#ff9800;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+  banner.innerHTML = '<span>⚠️ 检测到其他设备更新了数据</span><div><button onclick="syncReload()" style="margin-right:8px;padding:4px 12px;border:none;border-radius:4px;background:#fff;color:#ff9800;cursor:pointer;font-weight:bold">重新加载</button><button onclick="dismissSyncBanner()" style="padding:4px 12px;border:1px solid #fff;border-radius:4px;background:transparent;color:#fff;cursor:pointer">忽略</button></div>';
+  document.body.prepend(banner);
+}
+
+async function syncReload() {
+  dismissSyncBanner();
+  await loadData();
+  showToast('✅ 已同步最新数据');
+}
+
+function dismissSyncBanner() {
+  const banner = document.getElementById('syncConflictBanner');
+  if (banner) banner.remove();
 }
 
 function startSyncConflictCheck() {
