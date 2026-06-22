@@ -597,10 +597,17 @@ function calcSummary() {
         // 月供：当期账单（含分期月供），减去已还部分
         monthlyDue += billRemaining;
 
-        // 还款日
-        const dueDay = acc.dueDay;
-        let dueDate = now.date(dueDay);
-        if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
+        // 还款日：优先使用 currentDueDate，否则用 dueDay 推算
+        let dueDate;
+        if (acc.currentDueDate) {
+          dueDate = dayjs(acc.currentDueDate);
+          // 如果 currentDueDate 已过期，推算下个月
+          if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
+        } else {
+          const dueDay = acc.dueDay;
+          dueDate = now.date(dueDay);
+          if (dueDate.isBefore(now, 'day')) dueDate = dueDate.add(1, 'month');
+        }
         if (!nextDue || dueDate.isBefore(nextDue)) nextDue = dueDate;
       }
     });
@@ -2966,7 +2973,7 @@ function buildDebtContext() {
   });
 
   // 近期消费（最近10条）
-  const expenses = (DATA.expenses || []).slice(-10).reverse();
+  const expenses = (typeof getExpenses === 'function' ? getExpenses() : (DATA.expenses || [])).slice(-10).reverse();
   if (expenses.length > 0) {
     lines.push(`▌ 最近消费记录（最新${expenses.length}条）`);
     expenses.forEach(e => {

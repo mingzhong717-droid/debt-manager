@@ -239,10 +239,15 @@ function renderRepaymentPlan() {
 
       if (amount <= 0 && status !== 'paid') return;
 
-      // 计算本月还款日
-      let dueDate = now.date(dueDay);
-      if (acc.dueDayNextMonth) {
-        dueDate = now.add(1, 'month').date(dueDay);
+      // 计算本月还款日：优先使用 currentDueDate（精确），否则用 dueDay 推算
+      let dueDate;
+      if (acc.currentDueDate) {
+        dueDate = dayjs(acc.currentDueDate);
+      } else {
+        dueDate = now.date(dueDay);
+        if (acc.dueDayNextMonth) {
+          dueDate = now.add(1, 'month').date(dueDay);
+        }
       }
 
       const daysLeft = dueDate.diff(now, 'day');
@@ -555,14 +560,19 @@ function renderBudgetPanel() {
   const monthStart = today.startOf('month');
   const monthEnd = today.endOf('month');
   let spent = 0;
+  let refundTotal = 0;
 
-  (DATA.expenses || []).forEach(exp => {
+  const allExpenses = typeof getExpenses === 'function' ? getExpenses() : (DATA.expenses || []);
+  allExpenses.forEach(exp => {
     const d = dayjs(exp.date);
     if (d.isBefore(monthStart) || d.isAfter(monthEnd)) return;
     if (isCashOut(exp)) return;
     if ((exp.category || '').includes('还款')) return;
     if (exp.amount > 0) spent += exp.amount;
+    else refundTotal += Math.abs(exp.amount);
   });
+  // 净支出 = 正数消费 - 退款
+  spent = Math.max(0, spent - refundTotal);
 
   const remaining = Math.max(0, limit - spent);
   const pct = Math.min(spent / limit, 1);
@@ -775,15 +785,19 @@ function renderBalanceView() {
     });
   });
 
-  // 本月日常消费
+  // 本月日常消费（使用 getExpenses 获取完整数据，并扣除退款）
   let dailySpent = 0;
-  (DATA.expenses || []).forEach(exp => {
+  let refundTotal = 0;
+  const allExpenses = typeof getExpenses === 'function' ? getExpenses() : (DATA.expenses || []);
+  allExpenses.forEach(exp => {
     const d = dayjs(exp.date);
     if (d.isBefore(monthStart) || d.isAfter(monthEnd)) return;
     if (isCashOut(exp)) return;
     if ((exp.category || '').includes('还款')) return;
     if (exp.amount > 0) dailySpent += exp.amount;
+    else refundTotal += Math.abs(exp.amount);
   });
+  dailySpent = Math.max(0, dailySpent - refundTotal);
 
   const surplus = income - monthlyInstallments - dailySpent;
   const surplusClass = surplus >= 0 ? 'positive' : 'negative';
